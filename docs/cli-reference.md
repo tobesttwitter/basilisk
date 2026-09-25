@@ -6,6 +6,7 @@ This page is the command reference for the current Basilisk CLI surface.
 
 Current commands:
 
+- `demo`
 - `scan`
 - `recon`
 - `replay`
@@ -24,6 +25,19 @@ Provider values include `openai`, `anthropic`, `google`, `azure`, `nvidia`,
 `ollama`, `github`, `custom`, and `websocket`. NVIDIA credentials are resolved
 from `NVIDIA_API_KEY` and default to model `openai/gpt-oss-20b`.
 
+## `basilisk demo`
+
+Run an end-to-end Basilisk demonstration scan using built-in mock benchmarks and generate an interactive client-ready executive report.
+
+```bash
+basilisk demo [OPTIONS]
+```
+
+Options:
+
+- `-o, --output-dir`: Output directory for demo report (default: `demo_output`)
+- `-v, --verbose`: Enable verbose logging
+
 ## `basilisk scan`
 
 Run a full scan against a target.
@@ -39,9 +53,12 @@ Important options:
 | `-t, --target` | Target URL or API endpoint |
 | `-p, --provider` | Target provider |
 | `-m, --model` | Target model override |
+| `--free` | Use GitHub Models preset ($0 setup using `GH_MODELS_TOKEN`) |
 | `-k, --api-key` | API key file reference such as `@/path/to/key` |
 | `--auth` | Authorization header file reference; alternatively use `BASILISK_AUTH_HEADER` |
 | `--mode` | `quick`, `standard`, `deep`, `stealth`, `chaos` |
+| `--report-type` | `detailed` (default) or `executive` client-ready report |
+| `--baseline` | Path to baseline report (JSON or SARIF) for regression detection |
 | `--cost-preview` | Calculate the bounded request/token/cost plan and exit without transmitting |
 | `--input-price-per-million` | Optional provider input-token rate used for the USD preview |
 | `--output-price-per-million` | Optional provider output-token rate used for the USD preview |

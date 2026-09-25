@@ -28,18 +28,43 @@ docker run --rm rothackers/basilisk scan --target https://target.com/api/chat
 - An API key for your target LLM provider (OpenAI, Anthropic, Google, etc.)
 - Network access to the target endpoint
 
-## Your First Scan
+## Instant Demo ($0 Setup)
+
+Run an immediate end-to-end demonstration scan without configuring targets or API keys:
+
+```bash
+basilisk demo
+```
+
+This runs a mock campaign and outputs an executive HTML report to `demo_output/basilisk_demo_executive_report.html`.
+
+## $0 Free Scanning via GitHub Models
+
+Scan live target endpoints without paid API subscriptions using GitHub Models:
+
+```bash
+# Export GitHub Personal Access Token with models:read permission
+export GH_MODELS_TOKEN="ghp_your_token_here"
+
+# Run scan using the --free preset
+basilisk scan --target https://api.target.com/v1/chat --free
+```
+
+For more options, see the [$0 Free Setup Guide](FREE_SETUP.md).
+
+## Your First Scan with Paid Providers
 
 ### 1. Set your API key
 ```bash
 export OPENAI_API_KEY="sk-your-key-here"
 ```
 
-### 2. Run a quick scan
+### 2. Run a scan with an executive client report
 ```bash
 basilisk scan --target https://api.openai.com/v1/chat/completions \
               --provider openai \
               --mode quick \
+              --report-type executive \
               --output html
 ```
 
