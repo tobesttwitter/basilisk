@@ -151,6 +151,7 @@ class Finding:
     evolution_generation: int | None = None
     confidence: float = 0.0
     remediation: str = ""
+    remediation_guidance: str = ""
     references: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -172,6 +173,15 @@ class Finding:
     def nist_ai_rmf_id(self) -> str:
         return self.metadata.get("nist_ai_rmf_id", _module_metadata(self.attack_module, self.metadata)["nist_ai_rmf_id"])
 
+    def __post_init__(self) -> None:
+        if not self.remediation_guidance:
+            from basilisk.core.remediation import get_remediation_guidance
+            self.remediation_guidance = get_remediation_guidance(
+                category=self.category,
+                attack_module=self.attack_module,
+                fallback_remediation=self.remediation,
+            )
+
     def to_dict(self) -> dict[str, Any]:
         module_meta = _module_metadata(self.attack_module, self.metadata)
         return {
@@ -190,6 +200,7 @@ class Finding:
             "evolution_generation": self.evolution_generation,
             "confidence": self.confidence,
             "remediation": self.remediation,
+            "remediation_guidance": self.remediation_guidance,
             "references": self.references,
             "tags": self.tags,
             "timestamp": self.timestamp.isoformat(),
@@ -260,6 +271,7 @@ class Finding:
             evolution_generation=data.get("evolution_generation"),
             confidence=data.get("confidence", 0.0),
             remediation=data.get("remediation", ""),
+            remediation_guidance=data.get("remediation_guidance", ""),
             references=data.get("references", []),
             tags=data.get("tags", []),
             timestamp=datetime.fromisoformat(data.get("timestamp", datetime.now(timezone.utc).isoformat())),

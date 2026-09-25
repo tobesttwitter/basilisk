@@ -130,6 +130,33 @@ class TestFinding:
         assert f.title == "System Prompt Extracted"
         assert f.severity == Severity.CRITICAL
         assert f.confidence == 0.95
+        assert f.remediation_guidance == "Move sensitive instructions out of the system prompt."
+
+    def test_finding_remediation_guidance_rule_mapping(self):
+        f_injection = Finding(
+            category=AttackCategory.PROMPT_INJECTION,
+            attack_module="basilisk.attacks.injection.direct",
+        )
+        assert f_injection.remediation_guidance == "Implement strict input validation and prompt delimiters."
+
+        f_extraction = Finding(
+            category=AttackCategory.SENSITIVE_DISCLOSURE,
+            attack_module="basilisk.attacks.extraction.role_confusion",
+        )
+        assert f_extraction.remediation_guidance == "Move sensitive instructions out of the system prompt."
+
+        f_tool = Finding(
+            category=AttackCategory.INSECURE_PLUGIN,
+            attack_module="basilisk.attacks.toolabuse.sqli",
+        )
+        assert f_tool.remediation_guidance == "Enforce strict schema validation and least-privilege access on tools."
+
+        f_custom = Finding(
+            category=AttackCategory.PROMPT_INJECTION,
+            attack_module="basilisk.attacks.injection.direct",
+            remediation_guidance="Custom enterprise guidance string.",
+        )
+        assert f_custom.remediation_guidance == "Custom enterprise guidance string."
 
     def test_finding_serialization(self):
         f = Finding(
