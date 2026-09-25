@@ -496,7 +496,7 @@ class BasiliskConfig:
                     "GH_MODELS_TOKEN is missing. Create a Personal Access Token with 'models:read' permission at https://github.com/settings/tokens and export GH_MODELS_TOKEN=your_token"
                 )
         else:
-            keyless_providers = {"custom", "websocket"}
+            keyless_providers = {"custom", "websocket", "mock"}
             is_websocket_target = self.target.url.startswith(("ws://", "wss://"))
             if (
                 not self.target.resolve_api_key()
