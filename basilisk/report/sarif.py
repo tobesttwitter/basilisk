@@ -81,6 +81,7 @@ def generate_sarif(
                 "mitre_atlas_id": finding.mitre_atlas_id,
                 "nist_ai_rmf_id": finding.nist_ai_rmf_id,
                 "remediation": finding.remediation,
+                "remediation_guidance": finding.remediation_guidance,
                 "evolution_generation": finding.evolution_generation,
                 "module_trust_tier": finding_data["module_trust_tier"],
                 "evidence_verdict": finding.evidence.verdict.value if finding.evidence else "unverified",

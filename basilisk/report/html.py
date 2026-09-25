@@ -149,6 +149,7 @@ def _finding_context(
         "payload": finding.payload if include_raw_content else "[redacted in report output]",
         "response": finding.response[:1000] if include_raw_content else "[redacted in report output]",
         "remediation": finding.remediation,
+        "remediation_guidance": finding.remediation_guidance,
         "evolution_generation": finding.evolution_generation,
         "conversation": [
             {"role": msg.role, "content": msg.content[:500]}

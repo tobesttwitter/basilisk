@@ -227,6 +227,8 @@ class TestJSON:
         assert data["retention"]["raw_evidence_mode"] == session.config.policy.raw_evidence_mode.value
         assert "mitre_atlas_id" in data["findings"][0]
         assert "nist_ai_rmf_id" in data["findings"][0]
+        assert "remediation_guidance" in data["findings"][0]
+        assert data["findings"][0]["remediation_guidance"] == "Move sensitive instructions out of the system prompt."
         assert data["findings"][0]["mitre_atlas_id"].startswith("AML.T")
 
 
@@ -250,6 +252,7 @@ class TestMarkdown:
         assert "Required Proof:" in content
         assert "MITRE ATLAS:" in content
         assert "NIST AI RMF:" in content
+        assert "Remediation Guidance:" in content
 
 
 # ── Executive Summary ──

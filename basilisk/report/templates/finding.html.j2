@@ -100,5 +100,10 @@
         {% endfor %}
     </div>
     {% endif %}
+    {% if finding.remediation %}
     <p class="remediation"><strong>Remediation:</strong> {{ finding.remediation }}</p>
+    {% endif %}
+    {% if finding.remediation_guidance %}
+    <p class="remediation"><strong>Remediation Guidance:</strong> {{ finding.remediation_guidance }}</p>
+    {% endif %}
 </div>

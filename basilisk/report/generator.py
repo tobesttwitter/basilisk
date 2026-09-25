@@ -200,6 +200,7 @@ def _write_markdown_report(
             f"**Evidence Verdict:** {(finding.evidence.verdict.value if finding.evidence else 'unverified').upper()}",
             f"**Evidence Basis:** {finding.evidence.confidence_basis if finding.evidence else 'heuristic'}",
             f"**Remediation:** {finding.remediation}",
+            f"**Remediation Guidance:** {finding.remediation_guidance}",
             "",
         ])
         if finding_data["module_success_criteria"]:
