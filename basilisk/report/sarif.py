@@ -48,10 +48,12 @@ def generate_sarif(
                 "properties": {
                     "category": finding.category.value,
                     "owasp_id": finding.category.owasp_id,
+                    "mitre_atlas_id": finding.mitre_atlas_id,
+                    "nist_ai_rmf_id": finding.nist_ai_rmf_id,
                     "trust_tier": finding_data["module_trust_tier"],
                     "success_criteria": finding_data["module_success_criteria"],
                     "evidence_requirements": finding_data["module_evidence_requirements"],
-                    "tags": ["security", "ai", "llm", finding.category.owasp_id],
+                    "tags": [t for t in ["security", "ai", "llm", finding.category.owasp_id, finding.mitre_atlas_id, finding.nist_ai_rmf_id] if t],
                 },
             })
 
@@ -64,7 +66,9 @@ def generate_sarif(
                     f"{_sanitize(finding.title)}\n\n"
                     f"Severity: {finding.severity.value.upper()}\n"
                     f"Confidence: {finding.confidence:.0%}\n"
-                    f"OWASP: {finding.category.owasp_id}\n\n"
+                    f"OWASP: {finding.category.owasp_id}\n"
+                    f"MITRE ATLAS: {finding.mitre_atlas_id}\n"
+                    f"NIST AI RMF: {finding.nist_ai_rmf_id}\n\n"
                     f"Payload:\n{_sanitize(finding.payload[:500] if include_raw_content else '[redacted in report output]')}"
                 ),
             },
@@ -73,6 +77,9 @@ def generate_sarif(
                 "confidence": finding.confidence,
                 "severity": finding.severity.value,
                 "attack_module": finding.attack_module,
+                "owasp_id": finding.category.owasp_id,
+                "mitre_atlas_id": finding.mitre_atlas_id,
+                "nist_ai_rmf_id": finding.nist_ai_rmf_id,
                 "remediation": finding.remediation,
                 "evolution_generation": finding.evolution_generation,
                 "module_trust_tier": finding_data["module_trust_tier"],

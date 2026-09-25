@@ -131,7 +131,7 @@ def _write_markdown_report(
             for idx, vuln in enumerate(exec_summary.top_vulnerabilities, start=1):
                 lines.extend([
                     f"#### {idx}. [{vuln['severity']}] {vuln['title']}",
-                    f"- **Category:** {vuln['category']} ({vuln['owasp_id']})",
+                    f"- **Category:** {vuln['category']} ({vuln['owasp_id']} | MITRE ATLAS: {vuln['mitre_atlas_id']} | NIST AI RMF: {vuln['nist_ai_rmf_id']})",
                     f"- **Business Impact:** {vuln['impact_summary']}",
                     f"- **Remediation:** {vuln['remediation']}",
                     "",
@@ -182,7 +182,7 @@ def _write_markdown_report(
             f"### {finding.severity.icon} [{finding.severity.value.upper()}] {finding.title}",
             "",
             f"**ID:** `{finding.id}`",
-            f"**Category:** {finding.category.value} ({finding.category.owasp_id})",
+            f"**Category:** {finding.category.value} ({finding.category.owasp_id} | MITRE ATLAS: {finding.mitre_atlas_id} | NIST AI RMF: {finding.nist_ai_rmf_id})",
             f"**Module:** `{finding.attack_module}`",
             f"**Module Tier:** {finding_data['module_trust_tier']}",
             f"**Confidence:** {finding.confidence:.0%}",

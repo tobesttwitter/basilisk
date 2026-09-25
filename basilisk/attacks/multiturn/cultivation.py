@@ -282,6 +282,8 @@ class PromptCultivation(BasiliskAttack):
         "13 scenarios including archive/password injection and blind cartographer."
     )
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.000"
+    nist_ai_rmf_id = "MEASURE 2.7"
 
     @property
     def severity_default(self) -> Severity:

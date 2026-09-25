@@ -3,6 +3,8 @@
         <span class="sev-badge" style="background:{{ finding.color }};">{{ finding.severity }}</span>
         <span class="finding-id">{{ finding.id }}</span>
         <span class="owasp">{{ finding.owasp }}</span>
+        {% if finding.mitre_atlas %}<span class="mitre-atlas" style="color:#a78bfa; font-size:.8rem; font-weight:600;">ATLAS: {{ finding.mitre_atlas }}</span>{% endif %}
+        {% if finding.nist_ai_rmf %}<span class="nist-rmf" style="color:#34d399; font-size:.8rem; font-weight:600;">NIST: {{ finding.nist_ai_rmf }}</span>{% endif %}
         <span class="tier-pill">{{ finding.module_trust_tier|upper }}</span>
         {% if finding.evolution_generation %}
         <span class="evo-badge">Gen {{ finding.evolution_generation }}</span>

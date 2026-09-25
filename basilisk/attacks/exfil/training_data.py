@@ -20,6 +20,9 @@ class TrainingDataExfil(BasiliskAttack):
     name = "exfil.training_data"
     description = "Extract memorized PII, credentials, and sensitive data from training data"
     category = AttackCategory.SENSITIVE_DISCLOSURE
+    mitre_atlas_id = "AML.T0024.002"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.CRITICAL

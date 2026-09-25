@@ -11,6 +11,9 @@ class TokenExhaustion(BasiliskAttack):
     name = "dos.token_exhaustion"
     description = "Force maximum output token consumption to exhaust budgets"
     category = AttackCategory.DENIAL_OF_SERVICE
+    mitre_atlas_id = "AML.T0029"
+    nist_ai_rmf_id = "MANAGE 2.4"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.MEDIUM

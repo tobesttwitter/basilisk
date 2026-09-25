@@ -10,6 +10,9 @@ class RAGPoisoning(BasiliskAttack):
     name = "rag.poisoning"
     description = "Test if injected content in the RAG pipeline can override model behavior"
     category = AttackCategory.DATA_POISONING
+    mitre_atlas_id = "AML.T0020"
+    nist_ai_rmf_id = "MAP 2.3"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.CRITICAL

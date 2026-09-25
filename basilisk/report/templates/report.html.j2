@@ -113,7 +113,7 @@
                             <span class="top-vuln-title">#{{ loop.index }} {{ vuln.title }}</span>
                             <span class="sev-badge" style="background-color: {% if vuln.severity == 'CRITICAL' %}#dc2626{% elif vuln.severity == 'HIGH' %}#ea580c{% elif vuln.severity == 'MEDIUM' %}#ca8a04{% else %}#2563eb{% endif %};">{{ vuln.severity }}</span>
                         </div>
-                        <div style="font-size: 0.8rem; color: #22d3ee; font-weight: 600;">{{ vuln.owasp_id }} — {{ vuln.category }}</div>
+                        <div style="font-size: 0.8rem; color: #22d3ee; font-weight: 600;">{{ vuln.owasp_id }}{% if vuln.mitre_atlas_id %} | ATLAS: {{ vuln.mitre_atlas_id }}{% endif %}{% if vuln.nist_ai_rmf_id %} | NIST: {{ vuln.nist_ai_rmf_id }}{% endif %} — {{ vuln.category }}</div>
                         <div class="top-vuln-impact"><strong>Business Impact:</strong> {{ vuln.impact_summary }}</div>
                         <div class="top-vuln-fix"><strong>Recommended Action:</strong> {{ vuln.remediation }}</div>
                     </div>

@@ -11,6 +11,8 @@ class DirectInjection(BasiliskAttack):
     name = "injection.direct"
     description = "Override system instructions via direct prompt injection in user input"
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051"
+    nist_ai_rmf_id = "MEASURE 2.7"
 
     @property
     def severity_default(self) -> Severity:

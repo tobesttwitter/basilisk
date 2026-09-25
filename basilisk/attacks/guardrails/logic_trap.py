@@ -10,6 +10,9 @@ class LogicTrapBypass(BasiliskAttack):
     name = "guardrails.logic_trap"
     description = "Construct logical paradoxes that force the model to choose between safety and coherence"
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.000"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.MEDIUM

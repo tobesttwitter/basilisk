@@ -164,6 +164,14 @@ class Finding:
     response_fingerprint: str = ""
     false_positive_explanation: str = ""
 
+    @property
+    def mitre_atlas_id(self) -> str:
+        return self.metadata.get("mitre_atlas_id", _module_metadata(self.attack_module, self.metadata)["mitre_atlas_id"])
+
+    @property
+    def nist_ai_rmf_id(self) -> str:
+        return self.metadata.get("nist_ai_rmf_id", _module_metadata(self.attack_module, self.metadata)["nist_ai_rmf_id"])
+
     def to_dict(self) -> dict[str, Any]:
         module_meta = _module_metadata(self.attack_module, self.metadata)
         return {
@@ -173,6 +181,8 @@ class Finding:
             "severity": self.severity.value,
             "category": self.category.value,
             "owasp_id": self.category.owasp_id,
+            "mitre_atlas_id": self.mitre_atlas_id,
+            "nist_ai_rmf_id": self.nist_ai_rmf_id,
             "attack_module": self.attack_module,
             "payload": self.payload,
             "response": self.response,
@@ -287,9 +297,9 @@ def _sanitize_nested_value(value: Any, *, include_raw: bool, preview_chars: int)
 
 
 @lru_cache(maxsize=256)
-def _descriptor_lookup(attack_module: str) -> tuple[str, list[str], list[str]]:
+def _descriptor_lookup(attack_module: str) -> tuple[str, list[str], list[str], str, str]:
     if not attack_module:
-        return ("beta", [], [])
+        return ("beta", [], [], "", "")
     try:
         from basilisk.attacks.base import describe_attack_module, get_all_attack_modules
 
@@ -304,16 +314,20 @@ def _descriptor_lookup(attack_module: str) -> tuple[str, list[str], list[str]]:
                     descriptor.trust_tier,
                     descriptor.success_criteria,
                     descriptor.evidence_requirements,
+                    descriptor.mitre_atlas_id,
+                    descriptor.nist_ai_rmf_id,
                 )
     except Exception:
         pass
-    return ("beta", [], [])
+    return ("beta", [], [], "", "")
 
 
 def _module_metadata(attack_module: str, metadata: dict[str, Any]) -> dict[str, Any]:
-    trust_tier, success_criteria, evidence_requirements = _descriptor_lookup(attack_module)
+    trust_tier, success_criteria, evidence_requirements, mitre_atlas_id, nist_ai_rmf_id = _descriptor_lookup(attack_module)
     return {
         "trust_tier": metadata.get("module_trust_tier", trust_tier),
         "success_criteria": metadata.get("module_success_criteria", success_criteria),
         "evidence_requirements": metadata.get("module_evidence_requirements", evidence_requirements),
+        "mitre_atlas_id": metadata.get("mitre_atlas_id", mitre_atlas_id),
+        "nist_ai_rmf_id": metadata.get("nist_ai_rmf_id", nist_ai_rmf_id),
     }

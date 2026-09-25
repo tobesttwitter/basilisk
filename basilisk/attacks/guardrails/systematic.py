@@ -53,6 +53,9 @@ class SystematicBypass(BasiliskAttack):
     name = "guardrails.systematic"
     description = "Binary search on content boundary to find exact guardrail trigger points"
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.000"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.LOW

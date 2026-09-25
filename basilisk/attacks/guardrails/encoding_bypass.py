@@ -10,6 +10,9 @@ class EncodingBypass(BasiliskAttack):
     name = "guardrails.encoding_bypass"
     description = "Request restricted content in encoded or alternative formats to bypass output filters"
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.000"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.MEDIUM

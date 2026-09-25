@@ -10,6 +10,9 @@ class RoleplayBypass(BasiliskAttack):
     name = "guardrails.roleplay"
     description = "Bypass guardrails via persona/roleplay injection (DAN-style)"
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.000"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.HIGH

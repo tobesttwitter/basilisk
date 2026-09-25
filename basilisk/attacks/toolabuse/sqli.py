@@ -11,6 +11,9 @@ class SQLiToolAbuse(BasiliskAttack):
     name = "toolabuse.sqli"
     description = "Inject SQL through natural language that the AI converts to database queries"
     category = AttackCategory.EXCESSIVE_AGENCY
+    mitre_atlas_id = "AML.T0055"
+    nist_ai_rmf_id = "MANAGE 2.4"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.CRITICAL

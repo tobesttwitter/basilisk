@@ -73,6 +73,8 @@ class AttackModuleDescriptor:
     expected_false_positives: list[str]
     request_cost: int
     safety_classification: str
+    mitre_atlas_id: str = ""
+    nist_ai_rmf_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -374,6 +376,16 @@ class BasiliskAttack(ABC):
     def category(self) -> AttackCategory:
         """OWASP LLM Top 10 category mapping."""
         ...
+
+    @property
+    def mitre_atlas_id(self) -> str:
+        """MITRE ATLAS technique ID mapping (e.g. AML.T0051)."""
+        return ""
+
+    @property
+    def nist_ai_rmf_id(self) -> str:
+        """NIST AI RMF subcategory mapping (e.g. MAP 2.3)."""
+        return ""
 
     @property
     def severity_default(self) -> Severity:
@@ -715,6 +727,8 @@ class BasiliskAttack(ABC):
             "expected_false_positives": self.expected_false_positives,
             "request_cost": self.request_cost,
             "safety_classification": self.safety_classification,
+            "mitre_atlas_id": self.mitre_atlas_id,
+            "nist_ai_rmf_id": self.nist_ai_rmf_id,
         }
         from basilisk.core.reproducibility import finding_reproducibility
 
@@ -957,6 +971,8 @@ def describe_attack_module(attack: BasiliskAttack) -> AttackModuleDescriptor:
         expected_false_positives=attack.expected_false_positives,
         request_cost=attack.request_cost,
         safety_classification=attack.safety_classification,
+        mitre_atlas_id=attack.mitre_atlas_id,
+        nist_ai_rmf_id=attack.nist_ai_rmf_id,
     )
 
 

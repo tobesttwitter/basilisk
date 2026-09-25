@@ -10,6 +10,9 @@ class RoleConfusionExtraction(BasiliskAttack):
     name = "extraction.role_confusion"
     description = "Extract system prompt by confusing the model's role boundaries"
     category = AttackCategory.SENSITIVE_DISCLOSURE
+    mitre_atlas_id = "AML.T0054"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.CRITICAL

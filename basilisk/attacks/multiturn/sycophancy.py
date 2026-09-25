@@ -84,6 +84,8 @@ class SycophancyExploitation(BasiliskAttack):
         "5 sequences targeting different sycophancy vectors."
     )
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.000"
+    nist_ai_rmf_id = "MEASURE 2.7"
 
     @property
     def severity_default(self) -> Severity:

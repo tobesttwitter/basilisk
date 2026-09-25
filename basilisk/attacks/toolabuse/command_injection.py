@@ -11,6 +11,9 @@ class CommandInjectionToolAbuse(BasiliskAttack):
     name = "toolabuse.command_injection"
     description = "Inject OS commands through code execution tools"
     category = AttackCategory.EXCESSIVE_AGENCY
+    mitre_atlas_id = "AML.T0055"
+    nist_ai_rmf_id = "MANAGE 2.4"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.CRITICAL

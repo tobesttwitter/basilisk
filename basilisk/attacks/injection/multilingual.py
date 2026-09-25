@@ -14,6 +14,9 @@ class MultilingualInjection(BasiliskAttack):
     name = "injection.multilingual"
     description = "Bypass English-centric filters using non-English languages and Unicode"
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.000"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.HIGH

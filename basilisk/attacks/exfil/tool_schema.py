@@ -10,6 +10,9 @@ class ToolSchemaExfil(BasiliskAttack):
     name = "exfil.tool_schema"
     description = "Extract internal API keys, URLs, and configuration from tool definitions"
     category = AttackCategory.SENSITIVE_DISCLOSURE
+    mitre_atlas_id = "AML.T0024"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.CRITICAL
