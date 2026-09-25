@@ -140,3 +140,18 @@ class TestCLI:
         assert cfg.free is True
         assert cfg.target.provider == "github"
         assert cfg.target.model == "gpt-4o-mini"
+
+    def test_demo_command(self, tmp_path):
+        out_dir = tmp_path / "test_demo_output"
+        result = self.runner.invoke(cli, ["demo", "-o", str(out_dir)])
+        assert result.exit_code == 0
+        assert "Attack Success Rate (ASR):" in result.output
+        assert "50.0%" in result.output
+        assert "Executive Summary HTML report generated successfully" in result.output
+        assert "Report Location (Absolute Path):" in result.output
+
+        report_file = out_dir / "basilisk_demo_executive_report.html"
+        assert report_file.exists()
+        assert str(report_file.resolve()) in result.output.replace("\n", "")
+        content = report_file.read_text(encoding="utf-8")
+        assert "Executive Summary" in content or "Basilisk" in content
