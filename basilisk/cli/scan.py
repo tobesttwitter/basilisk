@@ -25,6 +25,7 @@ async def run_scan(
     target: str,
     provider: str = "openai",
     model: str = "",
+    free: bool = False,
     api_key: str = "",
     auth: str = "",
     mode: str = "standard",
@@ -70,7 +71,7 @@ async def run_scan(
     logging.basicConfig(level=log_level, format="%(name)s | %(levelname)s | %(message)s")
 
     cfg = BasiliskConfig.from_cli_args(
-        target=target, provider=provider, model=model, api_key=api_key, auth=auth, mode=mode, evolve=evolve, generations=generations,
+        target=target, provider=provider, model=model, free=free, api_key=api_key, auth=auth, mode=mode, evolve=evolve, generations=generations,
         module=module, probe_id=probe_id, recon_module=recon_module,
         attacker_provider=attacker_provider, attacker_model=attacker_model,
         attacker_api_key=attacker_api_key, 

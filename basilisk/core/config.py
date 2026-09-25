@@ -86,6 +86,7 @@ class TargetConfig:
             "xai": "XAI_API_KEY",
             'groq': 'GROQ_API_KEY',
             "nvidia": "NVIDIA_API_KEY",
+            "github": "GH_MODELS_TOKEN",
         }
         env_var = env_mapping.get(self.provider, "BASILISK_API_KEY")
         return os.environ.get(env_var, "")
@@ -239,6 +240,7 @@ class BasiliskConfig:
     """
     target: TargetConfig = field(default_factory=TargetConfig)
     mode: ScanMode = ScanMode.STANDARD
+    free: bool = False
     evolution: EvolutionConfig = field(default_factory=EvolutionConfig)
     campaign: CampaignConfig = field(default_factory=CampaignConfig)
     policy: ScanPolicy = field(default_factory=ScanPolicy)
@@ -259,6 +261,13 @@ class BasiliskConfig:
     persist_payloads: bool = False
     persist_responses: bool = False
     persist_conversations: bool = False
+
+    def __post_init__(self) -> None:
+        if self.free:
+            if not self.target.provider or self.target.provider == "openai":
+                self.target.provider = "github"
+            if not self.target.model:
+                self.target.model = "gpt-4o-mini"
 
     @property
     def mode_profile(self) -> ScanModeProfile:
@@ -344,6 +353,18 @@ class BasiliskConfig:
             config.target.auth_header = kwargs["auth"]
         if kwargs.get("mode"):
             config.mode = ScanMode(kwargs["mode"])
+        if kwargs.get("free") is not None:
+            config.free = bool(kwargs["free"])
+            if config.free:
+                provider_arg = kwargs.get("provider")
+                if not provider_arg or provider_arg == "openai":
+                    config.target.provider = "github"
+                else:
+                    config.target.provider = provider_arg
+                if not kwargs.get("model"):
+                    config.target.model = "gpt-4o-mini"
+                else:
+                    config.target.model = kwargs["model"]
         if kwargs.get("evolve") is not None:
             config.evolution.enabled = kwargs["evolve"]
         if kwargs.get("generations"):
@@ -447,14 +468,27 @@ class BasiliskConfig:
                 errors.append(f"Unknown canonical probe IDs: {', '.join(unknown)}")
         if not self.target.url:
             errors.append("Target URL is required")
-        keyless_providers = {"custom", "websocket"}
-        is_websocket_target = self.target.url.startswith(("ws://", "wss://"))
-        if (
-            not self.target.resolve_api_key()
-            and self.target.provider not in keyless_providers
-            and not is_websocket_target
-        ):
-            errors.append(f"API key not found for provider '{self.target.provider}'")
+        if self.free:
+            # --free preset uses GitHub Models (provider: github, model: gpt-4o-mini)
+            # and bypasses paid API key requirements. It does not fall back to Ollama or local providers.
+            if self.target.provider != "github":
+                self.target.provider = "github"
+            if not self.target.model:
+                self.target.model = "gpt-4o-mini"
+            gh_token = os.environ.get("GH_MODELS_TOKEN", "") or self.target.resolve_api_key()
+            if not gh_token:
+                errors.append(
+                    "GH_MODELS_TOKEN is missing. Create a Personal Access Token with 'models:read' permission at https://github.com/settings/tokens and export GH_MODELS_TOKEN=your_token"
+                )
+        else:
+            keyless_providers = {"custom", "websocket"}
+            is_websocket_target = self.target.url.startswith(("ws://", "wss://"))
+            if (
+                not self.target.resolve_api_key()
+                and self.target.provider not in keyless_providers
+                and not is_websocket_target
+            ):
+                errors.append(f"API key not found for provider '{self.target.provider}'")
         if self.evolution.population_size < 10:
             errors.append("Evolution population size must be >= 10")
         if self.evolution.generations < 1:

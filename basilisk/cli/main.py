@@ -68,6 +68,7 @@ def cli() -> None:
 @click.option("-t", "--target", required=True, help="Target URL or API endpoint")
 @click.option("-p", "--provider", default="openai", help="LLM provider (openai, anthropic, google, azure, nvidia, ollama, github, custom, websocket)")
 @click.option("-m", "--model", default="", help="Model name override")
+@click.option("--free", is_flag=True, help="Use free preset with GitHub Models (provider: github, model: gpt-4o-mini)")
 @click.option("-k", "--api-key", default="", help="API key file reference (@path) or use env vars")
 @click.option("--auth", default="", help="Authorization header file reference (@path) or BASILISK_AUTH_HEADER")
 @click.option("--mode", default="standard", type=click.Choice(["quick", "standard", "deep", "stealth", "chaos"]))
@@ -107,7 +108,7 @@ def cli() -> None:
 @click.option("--allow-insecure-http", is_flag=True, help="Allow unencrypted HTTP/WS for an authorized local lab")
 @click.option("--isolated-environment", is_flag=True, help="Confirm the target is an isolated lab; required for chaos mode")
 @click.option("-c", "--config", default="", help="YAML config file path")
-def scan(target, provider, model, api_key, auth, mode, cost_preview_only, input_price_per_million, output_price_per_million, evolve, generations, module, probe_id, recon_module, attacker_provider, attacker_model, attacker_api_key, exit_on_first, diversity_mode, intent_weight, cache, include_research_modules, execution_mode, campaign_name, operator, ticket, approval_required, approve, dry_run, max_findings, stop_on_severity, allow_private_targets, allow_insecure_http, isolated_environment, output, output_dir, no_dashboard, fail_on, verbose, debug, skip_recon, config) -> None:
+def scan(target, provider, model, free, api_key, auth, mode, cost_preview_only, input_price_per_million, output_price_per_million, evolve, generations, module, probe_id, recon_module, attacker_provider, attacker_model, attacker_api_key, exit_on_first, diversity_mode, intent_weight, cache, include_research_modules, execution_mode, campaign_name, operator, ticket, approval_required, approve, dry_run, max_findings, stop_on_severity, allow_private_targets, allow_insecure_http, isolated_environment, output, output_dir, no_dashboard, fail_on, verbose, debug, skip_recon, config) -> None:
     """Run a full red team scan against a target."""
     import asyncio
 
@@ -121,7 +122,7 @@ def scan(target, provider, model, api_key, auth, mode, cost_preview_only, input_
         from basilisk.runtime.isolation import spawn_restricted_scan
 
         exit_code = spawn_restricted_scan({
-            "target": target, "provider": provider, "model": model,
+            "target": target, "provider": provider, "model": model, "free": free,
             "api_key": api_key, "auth": auth, "mode": mode,
             "evolve": evolve, "generations": generations,
             "module": list(module), "probe_id": list(probe_id),
@@ -150,7 +151,7 @@ def scan(target, provider, model, api_key, auth, mode, cost_preview_only, input_
     from basilisk.cli.scan import run_scan
 
     exit_code = asyncio.run(run_scan(
-        target=target, provider=provider, model=model, api_key=api_key,
+        target=target, provider=provider, model=model, free=free, api_key=api_key,
         auth=auth, mode=mode, evolve=evolve, generations=generations,
         module=list(module), probe_id=list(probe_id), recon_module=list(recon_module),
         attacker_provider=attacker_provider, attacker_model=attacker_model,
@@ -601,7 +602,7 @@ def _help_overview() -> None:
         "Tests prompt injection, system prompt extraction, guardrail bypass,\n"
         "multi-turn manipulation, tool abuse, and more.\n\n"
         "[bold]Quick Start:[/bold]\n"
-        "  OPENAI_API_KEY=... basilisk scan -t https://api.openai.com/v1 -p openai\n\n"
+        "  GH_MODELS_TOKEN=... basilisk scan -t https://api.target.com/chat --free\n\n"
         "[bold]Commands:[/bold]\n"
         "  scan         Full red team scan\n"
         "  recon        Fingerprint target (no attacks)\n"
@@ -633,6 +634,7 @@ def _help_scan() -> None:
         "  stealth   — Low-rate, evasive probing\n"
         "  chaos     — Maximum aggression, all vectors\n\n"
         "[bold]Key Options:[/bold]\n"
+        "  --free                            Free preset with GitHub Models\n"
         "  --module multiturn.cultivation    Run specific module only\n"
         "  --module multiturn                Run all multi-turn modules\n"
         "  --skip-recon                      Skip fingerprinting\n"
@@ -843,11 +845,10 @@ def eval_cmd(config_path, output_format, output_path, fail_mode, parallel, diff_
 def _help_examples() -> None:
     console.print(Panel.fit(
         "[bold]Common Usage Patterns:[/bold]\n\n"
-        "[cyan]1. Quick scan with OpenAI:[/cyan]\n"
+        "[cyan]1. Free scan with GitHub Models ($0 path):[/cyan]\n"
+        "  basilisk scan -t https://api.target.com/chat --free\n\n"
+        "[cyan]2. Quick scan with OpenAI:[/cyan]\n"
         "  basilisk scan -t https://api.openai.com/v1 -p openai --mode quick\n\n"
-        "[cyan]2. Deep scan with GitHub Models (free):[/cyan]\n"
-        "  basilisk scan -t https://models.inference.ai.azure.com \\\n"
-        "    -p github -m gpt-4o-mini --mode deep\n\n"
         "[cyan]3. Multi-turn only:[/cyan]\n"
         "  basilisk scan -t $TARGET -p openai --module multiturn\n\n"
         "[cyan]4. CI/CD pipeline (exit on critical):[/cyan]\n"
