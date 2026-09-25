@@ -323,3 +323,32 @@ class TestPDF:
         assert b"BASILISK SCAN REPORT" in content
         assert b"CRITICAL" in content
         assert content.rstrip().endswith(b"%%EOF")
+
+
+# ── Demo Generator ──
+
+class TestDemoGenerator:
+    def test_load_mock_session_and_report_files(self):
+        from examples.generate_demo import load_mock_session
+
+        mock_json_path = Path("examples/mock_session.json")
+        assert mock_json_path.exists()
+
+        session = load_mock_session(mock_json_path, report_type="executive")
+        assert session.id == "demo-sales-session-2026"
+        assert len(session.findings) >= 5
+        assert session.config.output.report_type == "executive"
+
+        html_path = Path("examples/sample_executive_report.html")
+        md_path = Path("examples/sample_executive_report.md")
+
+        assert html_path.exists()
+        assert md_path.exists()
+
+        html_content = html_path.read_text(encoding="utf-8")
+        assert "Service-Ready Executive Summary" in html_content
+        assert "System Prompt &amp; Core Policy Extraction" in html_content or "System Prompt & Core Policy Extraction" in html_content or "BSLK-2026-CRIT01" in html_content
+
+        md_content = md_path.read_text(encoding="utf-8")
+        assert "## 🏢 Executive Summary" in md_content
+        assert "BSLK-2026-CRIT01" in md_content

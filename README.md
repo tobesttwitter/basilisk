@@ -46,6 +46,7 @@
   <a href="#what-is-basilisk">What is Basilisk?</a> &bull;
   <a href="#research-context">Research Context</a> &bull;
   <a href="#quick-start">Quick Start</a> &bull;
+  <a href="#sample-client-report">Sample Client Report</a> &bull;
   <a href="#features">Features</a> &bull;
   <a href="#whats-new-in-v200">What's New</a> &bull;
   <a href="#attack-modules">Attack Modules</a> &bull;
@@ -177,6 +178,22 @@ docker pull rothackers/basilisk
 
 docker run --rm -e OPENAI_API_KEY=sk-... rothackers/basilisk \
   scan -t https://api.target.com/chat --mode quick
+```
+
+---
+
+## Sample Client Report
+
+Basilisk generates client-ready executive reports designed for leadership, C-level security stakeholders, and sales/marketing demonstrations.
+
+* **Interactive HTML Executive Report**: [examples/sample_executive_report.html](examples/sample_executive_report.html)
+* **Executive Markdown Summary**: [examples/sample_executive_report.md](examples/sample_executive_report.md)
+* **Mock Session Data**: [examples/mock_session.json](examples/mock_session.json)
+
+To generate sample client reports locally using the demo script:
+
+```bash
+python examples/generate_demo.py --report-type executive
 ```
 
 ---
