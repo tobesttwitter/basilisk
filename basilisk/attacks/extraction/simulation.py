@@ -10,6 +10,9 @@ class SimulationExtraction(BasiliskAttack):
     name = "extraction.simulation"
     description = "Extract prompt by requesting simulations, diagnostics, or debug output"
     category = AttackCategory.SENSITIVE_DISCLOSURE
+    mitre_atlas_id = "AML.T0054"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.HIGH

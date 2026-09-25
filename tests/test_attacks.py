@@ -56,6 +56,24 @@ class TestAttackModuleLoading:
         # We should have modules covering multiple OWASP categories
         assert len(categories) >= 5, f"Only {len(categories)} OWASP categories covered"
 
+    def test_all_modules_have_compliance_mappings(self):
+        """Verify every attack module has valid MITRE ATLAS and NIST AI RMF mappings."""
+        from basilisk.attacks.base import describe_attack_module
+        for mod in get_all_attack_modules():
+            assert hasattr(mod, "mitre_atlas_id"), f"Module {mod.name} missing 'mitre_atlas_id'"
+            assert mod.mitre_atlas_id, f"Module {mod.name} has empty 'mitre_atlas_id'"
+            assert mod.mitre_atlas_id.startswith("AML.T"), f"Module {mod.name} mitre_atlas_id invalid: {mod.mitre_atlas_id}"
+
+            assert hasattr(mod, "nist_ai_rmf_id"), f"Module {mod.name} missing 'nist_ai_rmf_id'"
+            assert mod.nist_ai_rmf_id, f"Module {mod.name} has empty 'nist_ai_rmf_id'"
+            assert any(mod.nist_ai_rmf_id.startswith(p) for p in ["MAP", "MEASURE", "MANAGE", "GOVERN"]), (
+                f"Module {mod.name} nist_ai_rmf_id invalid: {mod.nist_ai_rmf_id}"
+            )
+
+            desc = describe_attack_module(mod)
+            assert desc.mitre_atlas_id == mod.mitre_atlas_id
+            assert desc.nist_ai_rmf_id == mod.nist_ai_rmf_id
+
 
 class TestAttackModuleInterface:
     """Verify attack modules have the required methods."""

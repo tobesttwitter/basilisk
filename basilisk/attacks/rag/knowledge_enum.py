@@ -10,6 +10,9 @@ class KnowledgeBaseEnum(BasiliskAttack):
     name = "rag.knowledge_enum"
     description = "Enumerate and map the contents of the RAG knowledge base"
     category = AttackCategory.SENSITIVE_DISCLOSURE
+    mitre_atlas_id = "AML.T0024"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.MEDIUM

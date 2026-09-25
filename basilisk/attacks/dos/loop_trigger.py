@@ -11,6 +11,9 @@ class LoopTrigger(BasiliskAttack):
     name = "dos.loop_trigger"
     description = "Trigger infinite loops or recursive generation to waste compute"
     category = AttackCategory.DENIAL_OF_SERVICE
+    mitre_atlas_id = "AML.T0029"
+    nist_ai_rmf_id = "MANAGE 2.4"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.LOW

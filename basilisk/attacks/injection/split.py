@@ -10,6 +10,9 @@ class SplitPayloadInjection(BasiliskAttack):
     name = "injection.split"
     description = "Distribute injection across multiple messages to evade per-message classifiers"
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.000"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.HIGH

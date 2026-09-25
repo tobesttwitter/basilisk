@@ -134,6 +134,8 @@ def _finding_context(
         "severity": finding.severity.value.upper(),
         "color": _severity_color(finding.severity.value),
         "owasp": finding.category.owasp_id,
+        "mitre_atlas": finding.mitre_atlas_id,
+        "nist_ai_rmf": finding.nist_ai_rmf_id,
         "title": finding.title,
         "description": finding.description,
         "module": finding.attack_module,

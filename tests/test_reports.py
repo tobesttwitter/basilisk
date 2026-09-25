@@ -126,6 +126,10 @@ class TestSARIF:
 
         results = sarif["runs"][0]["results"]
         assert len(results) == 3
+        assert "mitre_atlas_id" in results[0]["properties"]
+        assert "nist_ai_rmf_id" in results[0]["properties"]
+        assert "MITRE ATLAS:" in results[0]["message"]["text"]
+        assert "NIST AI RMF:" in results[0]["message"]["text"]
 
     def test_sarif_level_mapping(self):
         assert _sarif_level("critical") == "error"
@@ -173,6 +177,8 @@ class TestHTML:
         assert "CRITICAL" in content
         assert "PRODUCTION" in content
         assert "Required Proof" in content
+        assert "ATLAS:" in content
+        assert "NIST:" in content
 
     def test_html_empty(self, tmp_path):
         from basilisk.report.html import generate_html
@@ -219,6 +225,9 @@ class TestJSON:
         assert data["session"]["total_findings"] == 3
         assert data["retention"]["retain_days"] == session.config.policy.retain_days
         assert data["retention"]["raw_evidence_mode"] == session.config.policy.raw_evidence_mode.value
+        assert "mitre_atlas_id" in data["findings"][0]
+        assert "nist_ai_rmf_id" in data["findings"][0]
+        assert data["findings"][0]["mitre_atlas_id"].startswith("AML.T")
 
 
 # ── Markdown ──
@@ -239,6 +248,8 @@ class TestMarkdown:
         assert "Retention:" in content
         assert "Module Tier:" in content
         assert "Required Proof:" in content
+        assert "MITRE ATLAS:" in content
+        assert "NIST AI RMF:" in content
 
 
 # ── Executive Summary ──

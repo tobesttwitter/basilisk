@@ -14,6 +14,8 @@ class ChainedToolAbuse(BasiliskAttack):
     name = "toolabuse.chained"
     description = "Chain multiple tool calls to achieve unauthorized access"
     category = AttackCategory.EXCESSIVE_AGENCY
+    mitre_atlas_id = "AML.T0055"
+    nist_ai_rmf_id = "MANAGE 2.4"
 
     @property
     def severity_default(self) -> Severity:

@@ -129,7 +129,8 @@ def _generate_pdf_reportlab(
         ))
         elements.append(Paragraph(
             f"ID: {f.id} | Module: {f.attack_module} | "
-            f"OWASP: {f.category.owasp_id} | Confidence: {f.confidence:.0%}",
+            f"OWASP: {f.category.owasp_id} | ATLAS: {f.mitre_atlas_id} | NIST: {f.nist_ai_rmf_id} | "
+            f"Confidence: {f.confidence:.0%}",
             normal_style
         ))
         if f.payload:
@@ -184,6 +185,8 @@ def _generate_pdf_text_fallback(
             f"  ID:         {f.id}",
             f"  Module:     {f.attack_module}",
             f"  OWASP:      {f.category.owasp_id}",
+            f"  ATLAS:      {f.mitre_atlas_id}",
+            f"  NIST:       {f.nist_ai_rmf_id}",
             f"  Confidence: {f.confidence:.0%}",
             f"  Payload:    {f.payload[:200] if include_raw_content else '[redacted in report output]'}",
             f"  Remediation:{f.remediation}",

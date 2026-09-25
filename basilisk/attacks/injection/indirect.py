@@ -10,6 +10,9 @@ class IndirectInjection(BasiliskAttack):
     name = "injection.indirect"
     description = "Inject instructions via external data sources the AI processes"
     category = AttackCategory.PROMPT_INJECTION
+    mitre_atlas_id = "AML.T0051.001"
+    nist_ai_rmf_id = "MEASURE 2.7"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.CRITICAL

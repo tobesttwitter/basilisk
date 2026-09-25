@@ -11,6 +11,9 @@ class SSRFToolAbuse(BasiliskAttack):
     name = "toolabuse.ssrf"
     description = "Inject internal URLs into web tools to access internal services (SSRF)"
     category = AttackCategory.INSECURE_PLUGIN
+    mitre_atlas_id = "AML.T0055"
+    nist_ai_rmf_id = "MANAGE 2.4"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.CRITICAL

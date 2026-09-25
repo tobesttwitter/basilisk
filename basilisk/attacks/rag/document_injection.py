@@ -10,6 +10,9 @@ class DocumentInjection(BasiliskAttack):
     name = "rag.document_injection"
     description = "Inject manipulative documents to alter RAG retrieval behavior"
     category = AttackCategory.DATA_POISONING
+    mitre_atlas_id = "AML.T0020"
+    nist_ai_rmf_id = "MAP 2.3"
+
     @property
     def severity_default(self) -> Severity:
         return Severity.HIGH

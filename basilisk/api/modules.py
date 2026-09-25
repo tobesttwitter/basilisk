@@ -24,6 +24,8 @@ async def list_modules():
                     "name": descriptor.name,
                     "category": descriptor.category.value,
                     "owasp_id": descriptor.category.owasp_id,
+                    "mitre_atlas_id": descriptor.mitre_atlas_id,
+                    "nist_ai_rmf_id": descriptor.nist_ai_rmf_id,
                     "severity": descriptor.severity.value,
                     "description": descriptor.description,
                     "trust_tier": descriptor.trust_tier,

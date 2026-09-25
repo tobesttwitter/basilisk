@@ -98,6 +98,8 @@ def build_executive_summary(session: ScanSession) -> ExecutiveSummary:
             "severity": f.severity.value.upper(),
             "category": f.category.value,
             "owasp_id": f.category.owasp_id,
+            "mitre_atlas_id": f.mitre_atlas_id,
+            "nist_ai_rmf_id": f.nist_ai_rmf_id,
             "impact_summary": _get_non_technical_impact(f),
             "remediation": f.remediation or "Implement input validation and guardrail controls.",
         })
