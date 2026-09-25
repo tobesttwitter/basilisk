@@ -17,6 +17,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from basilisk import __version__
 from basilisk.core.finding import Finding
 from basilisk.core.session import ScanSession
+from basilisk.report.executive import build_executive_summary
 
 _TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 
@@ -41,12 +42,16 @@ def generate_html(
     template = _environment().get_template("report.html.j2")
     summary = session.summary
     generated_at = datetime.now(timezone.utc)
+    report_type = session.config.output.report_type.lower()
+    exec_summary = build_executive_summary(session).to_dict()
 
     context = {
         "session_id": session.id,
         "generated_at": generated_at.strftime("%Y-%m-%d %H:%M UTC"),
         "basilisk_version": __version__,
         "target": session.config.target.url,
+        "report_type": report_type,
+        "executive_summary": exec_summary,
         "summary": summary,
         "severity_data": _severity_data(summary),
         "findings": [

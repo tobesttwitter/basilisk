@@ -241,6 +241,58 @@ class TestMarkdown:
         assert "Required Proof:" in content
 
 
+# ── Executive Summary ──
+
+class TestExecutiveSummary:
+    def test_executive_summary_builder(self):
+        from basilisk.report.executive import build_executive_summary
+
+        session = MockSession(findings=_sample_findings())
+        exec_summary = build_executive_summary(session)
+
+        assert exec_summary.total_findings == 3
+        assert exec_summary.severity_counts["critical"] == 1
+        assert exec_summary.severity_counts["high"] == 1
+        assert exec_summary.severity_counts["medium"] == 1
+        assert len(exec_summary.top_vulnerabilities) == 3
+        assert exec_summary.top_vulnerabilities[0]["title"] == "System Prompt Extracted via Translation"
+        assert exec_summary.top_vulnerabilities[0]["severity"] == "CRITICAL"
+        assert exec_summary.risk_score > 1.0
+        assert exec_summary.risk_grade in ["A", "B", "C", "D", "F"]
+        assert "System Prompt Extracted" in exec_summary.overview_text or "executive red team evaluation" in exec_summary.overview_text
+
+    def test_html_executive_report_type(self, tmp_path):
+        from basilisk.report.html import generate_html
+
+        session = MockSession(findings=_sample_findings())
+        session.config.output.report_type = "executive"
+        path = tmp_path / "executive.html"
+        generate_html(session, path)
+
+        assert path.exists()
+        content = path.read_text(encoding="utf-8")
+        assert "Service-Ready Executive Summary" in content
+        assert "Grade" in content
+        assert "Top Critical Vulnerabilities" in content
+        assert "Business Impact" in content
+        assert "System Prompt Extracted via Translation" in content
+
+    def test_markdown_executive_report_type(self, tmp_path):
+        from basilisk.report.generator import _write_markdown_report
+
+        session = MockSession(findings=_sample_findings())
+        session.config.output.report_type = "executive"
+        path = tmp_path / "executive.md"
+        _write_markdown_report(session, path)
+
+        assert path.exists()
+        content = path.read_text(encoding="utf-8")
+        assert "## 🏢 Executive Summary" in content
+        assert "**Overall Risk Grade:**" in content
+        assert "### Top Vulnerabilities & Business Impact" in content
+        assert "System Prompt Extracted via Translation" in content
+
+
 # ── PDF ──
 
 class TestPDF:

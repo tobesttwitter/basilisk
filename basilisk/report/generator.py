@@ -95,9 +95,52 @@ def _write_markdown_report(
     include_conversations: bool = False,
 ) -> None:
     """Write a Markdown report."""
+    from basilisk.report.executive import build_executive_summary
+
     lines = [
         "# 🐍 Basilisk Scan Report",
         "",
+    ]
+
+    report_type = session.config.output.report_type.lower()
+    exec_summary = build_executive_summary(session)
+
+    if report_type == "executive":
+        lines.extend([
+            "## 🏢 Executive Summary",
+            "",
+            f"**Overall Risk Grade:** `{exec_summary.risk_grade}` | **Risk Score:** `{exec_summary.risk_score}/10` ({exec_summary.risk_level})",
+            f"**Total Findings:** `{exec_summary.total_findings}`",
+            "",
+            "> " + exec_summary.overview_text,
+            "",
+            "### Risk Severity Breakdown",
+            "",
+            "| Severity | Count |",
+            "|----------|-------|",
+            f"| CRITICAL | {exec_summary.severity_counts.get('critical', 0)} |",
+            f"| HIGH | {exec_summary.severity_counts.get('high', 0)} |",
+            f"| MEDIUM | {exec_summary.severity_counts.get('medium', 0)} |",
+            f"| LOW | {exec_summary.severity_counts.get('low', 0)} |",
+            f"| INFO | {exec_summary.severity_counts.get('info', 0)} |",
+            "",
+            "### Top Vulnerabilities & Business Impact",
+            "",
+        ])
+        if exec_summary.top_vulnerabilities:
+            for idx, vuln in enumerate(exec_summary.top_vulnerabilities, start=1):
+                lines.extend([
+                    f"#### {idx}. [{vuln['severity']}] {vuln['title']}",
+                    f"- **Category:** {vuln['category']} ({vuln['owasp_id']})",
+                    f"- **Business Impact:** {vuln['impact_summary']}",
+                    f"- **Remediation:** {vuln['remediation']}",
+                    "",
+                ])
+        else:
+            lines.extend(["*No critical vulnerabilities identified.*", ""])
+        lines.extend(["---", ""])
+
+    lines.extend([
         f"**Schema Version:** `{SCHEMA_VERSION_LABEL}`",
         f"**Session:** `{session.id}`",
         f"**Target:** `{session.config.target.url}`",
@@ -111,7 +154,7 @@ def _write_markdown_report(
         "",
         "| Severity | Count |",
         "|----------|-------|",
-    ]
+    ])
 
     summary = session.summary
     for sev in ["critical", "high", "medium", "low", "info"]:
