@@ -191,6 +191,7 @@ class EvolutionConfig:
     operator_exploration_bias: float = 0.08
     multi_objective_mode: str = "pareto"
     random_seed: int = 0
+    fitness_weights: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -393,6 +394,8 @@ class BasiliskConfig:
             config.evolution.diversity_mode = kwargs["diversity_mode"]
         if kwargs.get("intent_weight") is not None:
             config.evolution.intent_weight = float(kwargs["intent_weight"])
+        if kwargs.get("fitness_weights") and isinstance(kwargs["fitness_weights"], dict):
+            config.evolution.fitness_weights.update(kwargs["fitness_weights"])
         if kwargs.get("output"):
             config.output.format = kwargs["output"]
         if kwargs.get("output_dir"):

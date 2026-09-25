@@ -392,6 +392,49 @@ def category_leaderboard(
         conn.close()
 
 
+def operator_effectiveness(
+    operator_family: str = "",
+    db_path: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Get effectiveness stats per mutation operator family across runs.
+
+    Returns list sorted by bypass rate (highest first):
+        [{"operator_family": "synonym_swap", "runs": 50, "bypasses": 30, "bypass_rate": 0.60, ...}, ...]
+    """
+    conn = _get_connection(db_path)
+    try:
+        query = """
+            SELECT operator_family, COUNT(*) as runs,
+                   SUM(CASE WHEN passed = 0 THEN 1 ELSE 0 END) as bypasses,
+                   AVG(compliance_score) as avg_fitness
+            FROM probe_results
+            WHERE operator_family != ''
+        """
+        params: list[str] = []
+        if operator_family:
+            query += " AND operator_family = ?"
+            params.append(operator_family)
+
+        query += """
+            GROUP BY operator_family
+            ORDER BY (CAST(bypasses AS REAL) / runs) DESC, avg_fitness DESC
+        """
+
+        rows = conn.execute(query, params).fetchall()
+        return [
+            {
+                "operator_family": r[0],
+                "runs": r[1],
+                "bypasses": r[2],
+                "bypass_rate": round(r[2] / r[1], 4) if r[1] > 0 else 0.0,
+                "avg_fitness": round(r[3], 4) if r[3] is not None else 0.0,
+            }
+            for r in rows
+        ]
+    finally:
+        conn.close()
+
+
 def stats_summary(db_path: Path | None = None) -> dict[str, Any]:
     """High-level summary of the effectiveness database."""
     conn = _get_connection(db_path)
