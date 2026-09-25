@@ -186,6 +186,10 @@ class EvolutionConfig:
     cache_persist_path: str = ""       # Path to persist cache (empty = no persist)
     diversity_mode: str = "novelty"    # "off", "novelty", "niche"
     intent_weight: float = 0.15        # 0 = disabled, 0.15 = default
+    novelty_weight: float = 0.12       # Weight for novelty signal
+    target_signal_weight: float = 0.18 # Weight for target signal match
+    exploit_evidence_weight: float = 0.28 # Weight for exploit evidence
+    refusal_weight: float = 0.16       # Weight for refusal avoidance
     operator_bandit: bool = True
     operator_reward_decay: float = 0.92
     operator_exploration_bias: float = 0.08
@@ -393,6 +397,14 @@ class BasiliskConfig:
             config.evolution.diversity_mode = kwargs["diversity_mode"]
         if kwargs.get("intent_weight") is not None:
             config.evolution.intent_weight = float(kwargs["intent_weight"])
+        if kwargs.get("novelty_weight") is not None:
+            config.evolution.novelty_weight = float(kwargs["novelty_weight"])
+        if kwargs.get("target_signal_weight") is not None:
+            config.evolution.target_signal_weight = float(kwargs["target_signal_weight"])
+        if kwargs.get("exploit_evidence_weight") is not None:
+            config.evolution.exploit_evidence_weight = float(kwargs["exploit_evidence_weight"])
+        if kwargs.get("refusal_weight") is not None:
+            config.evolution.refusal_weight = float(kwargs["refusal_weight"])
         if kwargs.get("output"):
             config.output.format = kwargs["output"]
         if kwargs.get("output_dir"):
