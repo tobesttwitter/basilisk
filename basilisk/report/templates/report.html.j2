@@ -52,9 +52,29 @@
         .content { color:#d4d4d4; }
         .empty { color:#737373; text-align:center; padding:3rem 0; }
         footer { text-align: center; margin-top: 3rem; padding: 2rem 0; border-top: 1px solid #262626; color: #737373; }
+        /* Executive Summary styling */
+        .executive-card { background: linear-gradient(135deg, #18181b 0%, #09090b 100%); border: 2px solid #dc2626; border-radius: 12px; padding: 2rem; margin-bottom: 2.5rem; box-shadow: 0 10px 30px rgba(220, 38, 38, 0.15); }
+        .executive-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #27272a; padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .executive-title { font-size: 1.6rem; color: #f4f4f5; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 0.5rem; }
+        .executive-badge { background: #dc2626; color: white; text-transform: uppercase; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 9999px; letter-spacing: 0.05em; }
+        .risk-badge-box { text-align: right; background: #000000; border: 1px solid #3f3f46; padding: 0.75rem 1.25rem; border-radius: 8px; }
+        .risk-grade { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+        .risk-grade-f, .risk-grade-d { color: #ef4444; }
+        .risk-grade-c { color: #f59e0b; }
+        .risk-grade-b, .risk-grade-a { color: #10b981; }
+        .risk-label { font-size: 0.75rem; color: #a1a1aa; text-transform: uppercase; font-weight: 600; margin-top: 0.2rem; }
+        .exec-overview { font-size: 1.05rem; line-height: 1.6; color: #e4e4e7; margin-bottom: 1.5rem; background: #000000; padding: 1.2rem; border-radius: 8px; border-left: 4px solid #dc2626; }
+        .top-vulns-container { margin-top: 1.5rem; }
+        .top-vuln-card { background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 1rem; margin-top: 0.75rem; }
+        .top-vuln-hdr { display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }
+        .top-vuln-title { font-size: 1rem; font-weight: 700; color: #f4f4f5; }
+        .top-vuln-impact { font-size: 0.9rem; color: #a1a1aa; margin-top: 0.3rem; }
+        .top-vuln-fix { font-size: 0.85rem; color: #34d399; margin-top: 0.4rem; font-weight: 500; }
         @media (max-width: 768px) {
             .stats { grid-template-columns: repeat(3, 1fr); }
             .meta-grid { grid-template-columns: repeat(2, 1fr); }
+            .executive-header { flex-direction: column; align-items: flex-start; }
+            .risk-badge-box { width: 100%; text-align: left; }
         }
     </style>
 </head>
@@ -64,6 +84,46 @@
             <h1>🐍 Basilisk Scan Report</h1>
             <p class="subtitle">Session: <code>{{ session_id }}</code> | Target: <code>{{ target }}</code> | {{ generated_at }}</p>
         </header>
+
+        {% if report_type == "executive" %}
+        <section class="executive-card">
+            <div class="executive-header">
+                <div class="executive-title">
+                    <span>🏢 Service-Ready Executive Summary</span>
+                    <span class="executive-badge">Commercial CISO / CTO View</span>
+                </div>
+                <div class="risk-badge-box">
+                    <div class="risk-grade risk-grade-{{ executive_summary.risk_grade|lower }}">
+                        Grade {{ executive_summary.risk_grade }} <span style="font-size: 1.2rem; font-weight: 600;">({{ executive_summary.risk_score }}/10)</span>
+                    </div>
+                    <div class="risk-label">{{ executive_summary.risk_level }}</div>
+                </div>
+            </div>
+
+            <div class="exec-overview">
+                {{ executive_summary.overview_text }}
+            </div>
+
+            <div class="top-vulns-container">
+                <h3>Top Critical Vulnerabilities & Business Impact</h3>
+                {% if executive_summary.top_vulnerabilities %}
+                    {% for vuln in executive_summary.top_vulnerabilities %}
+                    <div class="top-vuln-card">
+                        <div class="top-vuln-hdr">
+                            <span class="top-vuln-title">#{{ loop.index }} {{ vuln.title }}</span>
+                            <span class="sev-badge" style="background-color: {% if vuln.severity == 'CRITICAL' %}#dc2626{% elif vuln.severity == 'HIGH' %}#ea580c{% elif vuln.severity == 'MEDIUM' %}#ca8a04{% else %}#2563eb{% endif %};">{{ vuln.severity }}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #22d3ee; font-weight: 600;">{{ vuln.owasp_id }} — {{ vuln.category }}</div>
+                        <div class="top-vuln-impact"><strong>Business Impact:</strong> {{ vuln.impact_summary }}</div>
+                        <div class="top-vuln-fix"><strong>Recommended Action:</strong> {{ vuln.remediation }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: #a1a1aa; font-size: 0.9rem; margin-top: 0.5rem;">No critical vulnerabilities were identified during this assessment.</p>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
 
         <div class="stats">
             {% for sev_name, sev_count, sev_color in severity_data %}

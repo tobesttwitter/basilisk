@@ -201,6 +201,7 @@ class EvolutionConfig:
 class OutputConfig:
     """Report output configuration."""
     format: str = "html"            # html, json, sarif, markdown, pdf
+    report_type: str = "standard"   # standard, executive
     output_dir: str = "./basilisk-reports"
     include_conversations: bool = False
     include_raw_content: bool = False
@@ -407,6 +408,8 @@ class BasiliskConfig:
             config.evolution.refusal_weight = float(kwargs["refusal_weight"])
         if kwargs.get("output"):
             config.output.format = kwargs["output"]
+        if kwargs.get("report_type"):
+            config.output.report_type = kwargs["report_type"]
         if kwargs.get("output_dir"):
             config.output.output_dir = kwargs["output_dir"]
         if kwargs.get("module"):
