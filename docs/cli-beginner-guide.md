@@ -40,7 +40,15 @@ pip install "basilisk-ai[pdf,secrets,multimodal]"
 
 ## First Command to Run
 
-Before you attack anything, look at the module catalog:
+The absolute fastest way to see Basilisk in action without any API keys or targets is running `basilisk demo`:
+
+```bash
+basilisk demo
+```
+
+This runs an instant end-to-end demonstration campaign and generates a sample executive client report in `demo_output/basilisk_demo_executive_report.html`.
+
+Next, inspect the available attack module catalog:
 
 ```bash
 basilisk modules
@@ -62,7 +70,21 @@ The trust tier matters:
 
 ## Your First Real Scan
 
-Example with OpenAI:
+### $0 Free Scanning via GitHub Models (No Paid API Keys Needed)
+
+You can run scans for $0 using GitHub Models and the `--free` preset. Obtain a free GitHub Personal Access Token with `models:read` scope:
+
+```bash
+export GH_MODELS_TOKEN="ghp_your_token_here"
+
+basilisk scan \
+  --target https://example.test/v1/chat/completions \
+  --free
+```
+
+For full setup details, see the [$0 Free Setup Guide](FREE_SETUP.md).
+
+### Scanning with Paid Providers (e.g. OpenAI)
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -191,18 +213,29 @@ By default Basilisk writes reports to `./basilisk-reports`.
 
 Most beginners should use:
 
-- `html` for reading
+- `html` for reading (`--report-type executive` for client deliverables)
 - `json` for automation
 - `sarif` for CI or security tooling
 
-Example:
+Example for executive client report:
 
 ```bash
 basilisk scan \
   --target https://example.test/v1/chat/completions \
-  --provider openai \
-  --model gpt-4o \
-  --output html
+  --free \
+  --output html \
+  --report-type executive
+```
+
+## Baseline Regression Detection
+
+To prevent security regressions in CI/CD pipelines, compare new scan results against a baseline report:
+
+```bash
+basilisk scan \
+  --target https://example.test/v1/chat/completions \
+  --free \
+  --baseline ./previous_scan.sarif
 ```
 
 ## Finding Past Runs

@@ -1,8 +1,44 @@
 # Reporting
 
-Basilisk generates reports in 5 formats for different use cases.
+Basilisk generates reports in 5 formats and 2 report types for different technical and executive use cases.
+
+## Executive vs Detailed Report Types
+
+You can control the depth and audience for HTML and Markdown reports using the `--report-type` flag:
+
+- **`--report-type detailed` (default)**: Comprehensive technical findings with full payload evolution trees, raw prompt/response transcripts, and operator telemetry.
+- **`--report-type executive`**: High-level, client-ready security summary designed for C-level leadership, management, and external clients. Includes executive risk scores, key findings overview, framework compliance indicators, and strategic remediation recommendations.
+
+```bash
+# Generate a client-ready executive HTML report
+basilisk scan --target https://target.com --free --report-type executive
+```
+
+## Sample Client Reports
+
+Sample client report artifacts are available in the [`examples/`](../examples/) directory:
+
+- [examples/sample_executive_report.html](../examples/sample_executive_report.html)
+- [examples/sample_executive_report.md](../examples/sample_executive_report.md)
+- [examples/mock_session.json](../examples/mock_session.json)
+
+To generate sample executive reports locally:
+
+```bash
+# Option 1: Run the built-in demo command
+basilisk demo
+
+# Option 2: Run the sample generator script
+python examples/generate_demo.py --report-type executive
+```
 
 ## Formats
+### Standard Features Across Reports
+
+All generated reports include:
+- **Framework Mappings**: OWASP LLM Top 10, MITRE ATLAS IDs (`AML.T0051`, `AML.T0054`, `AML.T0055`, etc.), and NIST AI RMF subcategory alignments.
+- **Actionable Remediation Guidance**: Detailed mitigation recommendations tailored to each finding and attack category.
+- **Evidence Verdicts**: Calibrated proof classifications (Confirmed, Partial, Refused, Inconclusive) and downgrade reasoning.
 
 ### HTML
 Professional dark-themed report with:

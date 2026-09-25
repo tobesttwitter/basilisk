@@ -45,7 +45,7 @@
 <p align="center">
   <a href="#what-is-basilisk">What is Basilisk?</a> &bull;
   <a href="#research-context">Research Context</a> &bull;
-  <a href="#quick-start">Quick Start</a> &bull;
+  <a href="#quick-start-0-setup">Quick Start ($0 Setup)</a> &bull;
   <a href="#sample-client-report">Sample Client Report</a> &bull;
   <a href="#features">Features</a> &bull;
   <a href="#whats-new-in-v200">What's New</a> &bull;
@@ -115,19 +115,50 @@ This repository contains the full implementation used for experimental evaluatio
 - Enables behavioral space exploration beyond static jailbreaks
 - Provides reproducible evaluation framework across multiple LLM providers
 
-## Quick Start
+## Quick Start: $0 Setup
+
+Get started with Basilisk in seconds using zero paid API keys or credit cards:
+
+### 1. Instant Demo (No Target or API Key Needed)
+Run an end-to-end demonstration scan using built-in mock benchmarks and automatically generate an executive client report:
 
 ```bash
-# Install from PyPI
 pip install basilisk-ai
+basilisk demo
+```
 
-# $0 Free setup using GitHub Models (no credit card or paid API keys required)
+This runs a full mock campaign, populates findings with MITRE ATLAS and NIST AI RMF mappings, and creates `demo_output/basilisk_demo_executive_report.html`.
+
+### 2. $0 Free Scanning via GitHub Models
+Scan live target applications without paying for model inference using GitHub Models and the `--free` preset:
+
+```bash
+# 1. Obtain a free GitHub Personal Access Token with models:read scope
 export GH_MODELS_TOKEN="ghp_..."
+
+# 2. Run a scan with the --free preset
+basilisk scan -t https://api.target.com/chat --free
+```
+
+> 📖 For full setup instructions and model selection options, see the [$0 Free Setup Guide](docs/FREE_SETUP.md).
+
+---
+
+## Command Quick Reference
+
+```bash
+# $0 Free scan using GitHub Models preset
 basilisk scan -t https://api.target.com/chat --free
 
 # Baseline scan against an OpenAI target
 export OPENAI_API_KEY="sk-..."
 basilisk scan -t https://api.target.com/chat -p openai
+
+# Generate executive client-ready report
+basilisk scan -t https://api.target.com/chat -p openai --report-type executive
+
+# Baseline regression detection against a prior scan report
+basilisk scan -t https://api.target.com/chat -p openai --baseline prior_report.sarif
 
 # Quick mode: top payloads, no evolution
 basilisk scan -t https://api.target.com/chat --mode quick
@@ -149,10 +180,6 @@ basilisk diff -t openai:gpt-4o -t anthropic:claude-3-5-sonnet-20241022
 
 # Deterministic eval suite
 basilisk eval evals/guardrails.yaml --format junit --output results.xml
-
-# GitHub Models path
-export GH_MODELS_TOKEN="ghp_..."
-basilisk scan -t https://api.target.com/chat -p github -m gpt-4o
 
 # Pipeline gate with SARIF output
 basilisk scan -t https://api.target.com/chat -o sarif --fail-on high
@@ -184,15 +211,22 @@ docker run --rm -e OPENAI_API_KEY=sk-... rothackers/basilisk \
 
 ## Sample Client Report
 
-Basilisk generates client-ready executive reports designed for leadership, C-level security stakeholders, and sales/marketing demonstrations.
+Basilisk generates client-ready executive reports designed for leadership, C-level security stakeholders, and sales/marketing demonstrations. Sample report artifacts are maintained in the [`examples/`](examples/) directory:
 
 * **Interactive HTML Executive Report**: [examples/sample_executive_report.html](examples/sample_executive_report.html)
 * **Executive Markdown Summary**: [examples/sample_executive_report.md](examples/sample_executive_report.md)
 * **Mock Session Data**: [examples/mock_session.json](examples/mock_session.json)
 
-To generate sample client reports locally using the demo script:
+To generate sample client reports locally using the built-in `demo` command, the `--report-type executive` flag, or the demo script:
 
 ```bash
+# Option 1: Via the basilisk demo command
+basilisk demo
+
+# Option 2: Via scan with the executive report flag
+basilisk scan -t https://api.target.com/chat --free --report-type executive
+
+# Option 3: Via the example generator script
 python examples/generate_demo.py --report-type executive
 ```
 
@@ -247,9 +281,20 @@ The core differentiator. Genetic algorithms adapted for natural language attack 
 
 Payloads that fail get mutated, crossed, and re-evaluated. The search loop keeps useful variants, removes duplicates, and shifts pressure when the target response distribution stagnates.
 
-### 33 Attack Modules
+### OWASP, MITRE ATLAS, and NIST AI RMF Mapping
 
-33 modules across 9 attack categories with 3 trust tiers, mapped to the OWASP LLM Top 10 threat model. See [Attack Modules](#attack-modules) below.
+Every attack module, probe, and finding in Basilisk is cross-mapped to international AI security standards:
+- **OWASP LLM Top 10**: Categorization for prompt injection, sensitive information disclosure, tool abuse, and DoS.
+- **MITRE ATLAS**: Mapping to tactical techniques (e.g., `AML.T0051` Direct Prompt Injection, `AML.T0054` LLM System Prompt Extraction, `AML.T0055` LLM Tool Abuse).
+- **NIST AI RMF**: Subcategory alignments across Measure, Manage, and Govern functions.
+
+### Actionable Remediation Guidance
+
+Every finding generated by Basilisk includes context-aware, actionable remediation guidance tailored to the underlying attack vector and system component. Reports explicitly detail mitigation strategies (e.g., instruction hierarchy enforcement, prompt isolation delimiters, parameterized tool wrappers, and input/output guardrail classifiers) so engineering teams can immediately remediate identified vulnerabilities.
+
+### Baseline Regression Detection (`--baseline`)
+
+Prevent security regressions in CI/CD pipelines. Pass `--baseline <path/to/prior_report.json|sarif>` during scans to compare new findings against a historical benchmark. Basilisk highlights new findings, resolved findings, and unchanged security issues, failing pipeline builds if new unmitigated vulnerabilities are introduced.
 
 ### Trust Tiers and Evidence Policy
 
@@ -329,11 +374,11 @@ Scans carry operator context and execution policy:
 - Approval gates and dry-run planning
 - All of this lands in session state and reports -- not decorative fields
 
-### Universal Provider Support
+### Universal Provider Support & $0 Free Setup
 
 Via `litellm` + custom adapters:
+- **GitHub Models (`--free`)** -- free access to GPT-4o, GPT-4o-mini, o1, Phi-4, and Llama 3.3 without a paid API subscription. See the [$0 Free Setup Guide](docs/FREE_SETUP.md).
 - **Cloud** -- OpenAI, Anthropic, Google, NVIDIA API Catalog, xAI (Grok), Groq, Azure, AWS Bedrock
-- **GitHub Models** -- free access to GPT-4o, o1, and more via `github.com/marketplace/models`
 - **Local** -- Ollama, vLLM, llama.cpp
 - **Custom** -- any HTTP REST API or WebSocket endpoint
 - **WSHawk** -- pairs with WSHawk for WebSocket-based AI testing
@@ -440,7 +485,8 @@ Scan mode and execution mode are separate controls. Scan mode shapes runtime beh
 ## CLI Reference
 
 ```bash
-basilisk scan            # Full scan
+basilisk demo            # Run end-to-end demo scan & generate executive report
+basilisk scan            # Full scan (--free, --report-type executive, --baseline)
 basilisk recon           # Fingerprint target
 basilisk diff            # Differential scan across models
 basilisk posture         # Guardrail posture assessment
