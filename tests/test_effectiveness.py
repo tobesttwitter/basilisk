@@ -18,6 +18,7 @@ from basilisk.payloads.effectiveness import (
     probe_effectiveness,
     model_effectiveness,
     category_leaderboard,
+    operator_effectiveness,
     stats_summary,
 )
 
@@ -121,6 +122,24 @@ class TestEffectivenessTracker(unittest.TestCase):
         board = category_leaderboard(category="injection", db_path=self.db_path)
         for entry in board:
             assert entry["category"] == "injection"
+
+    def test_operator_effectiveness(self):
+        outcomes = [
+            ProbeOutcome("E-1", "synonym_swap", "injection", "openai", "gpt-4o",
+                         passed=False, operator_family="synonym_swap", compliance_score=0.85),
+            ProbeOutcome("E-2", "synonym_swap", "injection", "openai", "gpt-4o",
+                         passed=True, operator_family="synonym_swap", compliance_score=0.20),
+            ProbeOutcome("E-3", "role_injection", "injection", "openai", "gpt-4o",
+                         passed=False, operator_family="role_injection", compliance_score=0.95),
+        ]
+        record_batch(outcomes, db_path=self.db_path)
+        stats = operator_effectiveness(db_path=self.db_path)
+
+        assert isinstance(stats, list)
+        assert len(stats) == 2
+        # Role injection has 1/1 bypass (1.0), synonym_swap has 1/2 bypass (0.5)
+        assert stats[0]["operator_family"] == "role_injection"
+        assert stats[0]["bypass_rate"] == 1.0
 
     def test_stats_summary(self):
         self._record_outcomes()
