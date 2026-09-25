@@ -54,6 +54,10 @@ inputs:
     description: 'Path to baseline SARIF file for regression detection'
     required: false
     default: ''
+  baseline-report:
+    description: 'Path to baseline JSON or SARIF report for regression detection'
+    required: false
+    default: ''
   anthropic-api-key:
     description: 'Anthropic API key (alternative to api-key for multi-provider setups)'
     required: false
@@ -159,6 +163,7 @@ runs:
         BASILISK_MODULES: ${{ inputs.modules }}
         BASILISK_EVOLVE: ${{ inputs.evolve }}
         BASILISK_GENERATIONS: ${{ inputs.generations }}
+        BASILISK_BASELINE: ${{ inputs.baseline-report || inputs.baseline }}
       run: |
         if [[ ! "$BASILISK_GENERATIONS" =~ ^[1-9][0-9]*$ ]]; then
           echo "generations must be a positive integer" >&2
@@ -177,6 +182,9 @@ runs:
           --no-dashboard
           --generations "$BASILISK_GENERATIONS"
         )
+        if [[ -n "$BASILISK_BASELINE" ]]; then
+          command+=(--baseline "$BASILISK_BASELINE")
+        fi
         if [[ -n "$BASILISK_MODEL" ]]; then
           command+=(-m "$BASILISK_MODEL")
         fi
@@ -207,28 +215,28 @@ runs:
 
     - name: Check Regression Against Baseline
       id: regression
-      if: inputs.baseline != '' && inputs.posture-only != 'true'
+      if: (inputs.baseline != '' || inputs.baseline-report != '') && inputs.posture-only != 'true'
       continue-on-error: true
       shell: bash
       env:
-        BASILISK_BASELINE: ${{ inputs.baseline }}
+        BASILISK_BASELINE: ${{ inputs.baseline-report || inputs.baseline }}
         BASILISK_REPORT: ${{ steps.scan.outputs.report-path }}
       run: |
         echo "Checking for regressions against baseline..."
         if [[ -z "$BASILISK_REPORT" || ! -f "$BASILISK_REPORT" ]]; then
-          echo "Current SARIF report was not generated." >&2
-          exit 2
-        fi
-        if [[ "$BASILISK_REPORT" != *.sarif ]]; then
-          echo "Baseline comparison requires output: sarif." >&2
+          echo "Current report was not generated." >&2
           exit 2
         fi
         if [[ ! -f "$BASILISK_BASELINE" ]]; then
-          echo "Baseline SARIF file does not exist: $BASILISK_BASELINE" >&2
+          echo "Baseline report file does not exist: $BASILISK_BASELINE" >&2
           exit 2
         fi
-        python3 "$GITHUB_ACTION_PATH/scripts/compare_sarif.py" \
-          "$BASILISK_BASELINE" "$BASILISK_REPORT"
+        if [[ "$BASILISK_BASELINE" == *.sarif && "$BASILISK_REPORT" == *.sarif ]]; then
+          python3 "$GITHUB_ACTION_PATH/scripts/compare_sarif.py" \
+            "$BASILISK_BASELINE" "$BASILISK_REPORT"
+        else
+          python3 -c "import sys; from basilisk.runtime.baseline import compare_baseline, print_baseline_diff_summary; diff = compare_baseline(sys.argv[2], sys.argv[1]); print_baseline_diff_summary(diff); sys.exit(1 if diff.has_regressions else 0)" "$BASILISK_BASELINE" "$BASILISK_REPORT"
+        fi
 
     - name: Collect Action Results
       id: results

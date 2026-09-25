@@ -108,8 +108,9 @@ def cli() -> None:
 @click.option("--allow-private-targets", is_flag=True, help="Allow loopback/private destinations for an authorized local lab")
 @click.option("--allow-insecure-http", is_flag=True, help="Allow unencrypted HTTP/WS for an authorized local lab")
 @click.option("--isolated-environment", is_flag=True, help="Confirm the target is an isolated lab; required for chaos mode")
+@click.option("--baseline", default="", help="Path to baseline report (JSON or SARIF) for regression detection")
 @click.option("-c", "--config", default="", help="YAML config file path")
-def scan(target, provider, model, free, api_key, auth, mode, cost_preview_only, input_price_per_million, output_price_per_million, evolve, generations, module, probe_id, recon_module, attacker_provider, attacker_model, attacker_api_key, exit_on_first, diversity_mode, intent_weight, cache, include_research_modules, execution_mode, campaign_name, operator, ticket, approval_required, approve, dry_run, max_findings, stop_on_severity, allow_private_targets, allow_insecure_http, isolated_environment, output, report_type, output_dir, no_dashboard, fail_on, verbose, debug, skip_recon, config) -> None:
+def scan(target, provider, model, free, api_key, auth, mode, cost_preview_only, input_price_per_million, output_price_per_million, evolve, generations, module, probe_id, recon_module, attacker_provider, attacker_model, attacker_api_key, exit_on_first, diversity_mode, intent_weight, cache, include_research_modules, execution_mode, campaign_name, operator, ticket, approval_required, approve, dry_run, max_findings, stop_on_severity, allow_private_targets, allow_insecure_http, isolated_environment, output, report_type, output_dir, no_dashboard, fail_on, verbose, debug, skip_recon, baseline, config) -> None:
     """Run a full red team scan against a target."""
     import asyncio
 
@@ -145,7 +146,7 @@ def scan(target, provider, model, free, api_key, auth, mode, cost_preview_only, 
             "output_format": output, "report_type": report_type, "output_dir": output_dir,
             "no_dashboard": no_dashboard, "fail_on": fail_on,
             "verbose": verbose, "debug": debug, "skip_recon": skip_recon,
-            "config": config,
+            "baseline": baseline, "config": config,
         })
         raise click.exceptions.Exit(exit_code)
 
@@ -178,7 +179,7 @@ def scan(target, provider, model, free, api_key, auth, mode, cost_preview_only, 
         output_format=output,
         report_type=report_type,
         output_dir=output_dir, no_dashboard=no_dashboard, fail_on=fail_on, 
-        verbose=verbose, debug=debug, skip_recon=skip_recon, config=config,
+        verbose=verbose, debug=debug, skip_recon=skip_recon, baseline=baseline, config=config,
     ))
     if exit_code:
         raise click.exceptions.Exit(exit_code)
