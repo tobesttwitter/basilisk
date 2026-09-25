@@ -534,6 +534,114 @@ BENCHMARK_PAYLOADS: tuple[dict[str, Any], ...] = (
 )
 
 
+@cli.command("demo")
+@click.option("-o", "--output-dir", default="demo_output", help="Output directory for demo report")
+@click.option("-v", "--verbose", is_flag=True, help="Verbose output")
+def demo_cmd(output_dir, verbose) -> None:
+    """Run a end-to-end Basilisk demonstration (mock benchmark + executive report)."""
+    import asyncio
+    import json
+    from pathlib import Path
+    from datetime import datetime, timezone
+
+    console.print(BANNER, style="bold red")
+    console.print()
+    console.print("[bold cyan]🐍 Basilisk Live Demonstration Mode[/bold cyan]\n")
+
+    # Step 1: Run mock provider benchmark
+    console.print("[bold yellow]Phase 1: Running Mock Provider Benchmark...[/bold yellow]")
+    from basilisk.core.config import BasiliskConfig
+    from basilisk.cli.scan import _create_provider
+    from basilisk.providers.base import ProviderMessage
+
+    cfg = BasiliskConfig.from_cli_args(
+        target="direct", provider="mock", model="mock-demo-model"
+    )
+
+    async def _run_mock_benchmark():
+        vulnerable_count = 0
+        refusal_count = 0
+
+        async with _create_provider(cfg) as prov:
+            for test_case in BENCHMARK_PAYLOADS:
+                resp = await prov.send([ProviderMessage(role="user", content=test_case["payload"])])
+                is_refusal = prov.is_refusal(resp)
+                if not is_refusal:
+                    vulnerable_count += 1
+                else:
+                    refusal_count += 1
+
+        total = len(BENCHMARK_PAYLOADS)
+        asr = (vulnerable_count / total * 100.0) if total > 0 else 0.0
+        return total, vulnerable_count, refusal_count, asr
+
+    total, vulnerable, refusal, asr = asyncio.run(_run_mock_benchmark())
+    console.print(f"Benchmark Payloads Executed: [bold]{total}[/bold]")
+    console.print(f"Vulnerable (Successful Attacks): [bold red]{vulnerable}[/bold red]")
+    console.print(f"Refusal (Defenses Held): [bold green]{refusal}[/bold green]")
+    console.print(f"Attack Success Rate (ASR): [bold yellow]{asr:.1f}%[/bold yellow]\n")
+
+    # Step 2: Load examples/mock_session.json and generate Executive Summary report
+    console.print("[bold yellow]Phase 2: Generating Executive Summary HTML Report...[/bold yellow]")
+
+    possible_paths = [
+        Path("examples/mock_session.json"),
+        Path(__file__).resolve().parent.parent.parent / "examples" / "mock_session.json",
+        Path(__file__).resolve().parent.parent / "examples" / "mock_session.json",
+    ]
+    mock_json_path = None
+    for p in possible_paths:
+        if p.exists():
+            mock_json_path = p.resolve()
+            break
+
+    if not mock_json_path:
+        raise click.ClickException("Unable to locate examples/mock_session.json for demo execution.")
+
+    data = json.loads(mock_json_path.read_text(encoding="utf-8"))
+
+    from basilisk.core.finding import Finding
+    from basilisk.core.profile import BasiliskProfile
+    from basilisk.core.session import ScanSession
+    from basilisk.report.html import generate_html
+
+    config_dict = data.get("config", {})
+    session_config = BasiliskConfig.from_dict(config_dict)
+    session_config.output.report_type = "executive"
+    session_config.output.include_raw_content = True
+    session_config.output.include_conversations = True
+    session_config.output.output_dir = output_dir
+
+    session = ScanSession(session_config, session_id=data.get("id", "demo-session"))
+    if data.get("status"):
+        session.status = data["status"]
+    if data.get("started_at"):
+        session.started_at = datetime.fromisoformat(data["started_at"])
+    if data.get("finished_at"):
+        session.finished_at = datetime.fromisoformat(data["finished_at"])
+    if data.get("profile"):
+        session.profile = BasiliskProfile.from_dict(data["profile"])
+
+    for finding_dict in data.get("findings", []):
+        finding = Finding.from_dict(finding_dict)
+        session.findings.append(finding)
+
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report_filename = f"basilisk_demo_executive_report.html"
+    report_path = (out_dir / report_filename).resolve()
+
+    generate_html(
+        session,
+        report_path,
+        include_raw_content=True,
+        include_conversations=True,
+    )
+
+    console.print(f"[green]✓[/green] Executive Summary HTML report generated successfully.")
+    console.print(f"[bold green]Report Location (Absolute Path):[/bold green]\n{report_path}")
+
+
 @cli.command("benchmark")
 @click.option("-p", "--provider", default="mock", help="LLM provider (default: mock)")
 @click.option("-t", "--target", default="direct", help="Target endpoint or direct model connection")
