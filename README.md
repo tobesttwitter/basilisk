@@ -608,6 +608,16 @@ jobs:
     sarif_file: basilisk-reports/*.sarif
 ```
 
+### Manual Demo Workflow in the Cloud
+
+You can run the Basilisk demo directly in GitHub Actions without installing local dependencies or configuring API keys:
+
+1. Navigate to the **Actions** tab in your GitHub repository.
+2. Select the **Basilisk Demo** workflow from the left sidebar.
+3. Click **Run workflow** and select the branch to execute on.
+4. Once the workflow run completes, scroll down to the **Artifacts** section at the bottom of the run summary page.
+5. Download `basilisk-demo-report.zip` to retrieve the generated `demo_output/basilisk_demo_executive_report.html` file.
+
 ### GitLab CI
 
 ```yaml
