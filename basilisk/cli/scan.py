@@ -65,6 +65,7 @@ async def run_scan(
     cost_preview_only: bool = False,
     input_price_per_million: float | None = None,
     output_price_per_million: float | None = None,
+    baseline: str = "",
     config: str = "",
 ) -> int:
     """Main scan execution pipeline."""
@@ -229,7 +230,24 @@ async def run_scan(
     if audit.log_path:
         console.print(f"  [dim]Audit log:[/dim] {audit.log_path}")
 
-    return 1 if final_status == "error" else session.exit_code
+    if final_status == "error":
+        return 1
+
+    if baseline:
+        from basilisk.runtime.baseline import compare_baseline, print_baseline_diff_summary
+
+        try:
+            diff = compare_baseline(session, baseline)
+            print_baseline_diff_summary(diff, console)
+            if diff.has_regressions:
+                return 1
+            return 0
+        except Exception as exc:
+            logger.exception("Baseline diff failed")
+            console.print(f"[red]✗ Baseline comparison failed: {exc}[/red]")
+            return 1
+
+    return session.exit_code
 
 
 async def run_recon(

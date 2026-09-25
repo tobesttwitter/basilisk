@@ -178,9 +178,9 @@ def build_worker_audit_policy(
         Path(sys.base_prefix).resolve(),
     }
     read_files = {request_path.resolve(), Path(os.devnull).resolve()}
-    for name in ("config", "api_key", "auth", "attacker_api_key"):
+    for name in ("config", "api_key", "auth", "attacker_api_key", "baseline"):
         value = str(arguments.get(name, "") or "")
-        if name == "config" and value:
+        if name in ("config", "baseline") and value:
             read_files.add(Path(value).expanduser().resolve())
         elif value.startswith("@") and len(value) > 1:
             read_files.add(Path(value[1:]).expanduser().resolve())
