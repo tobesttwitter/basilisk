@@ -120,3 +120,23 @@ class TestCLI:
             ["scan", "-t", "https://example.test", "--no-evolve"],
         )
         assert result.exit_code == 7
+
+    def test_scan_free_preset_flag_parsing(self, monkeypatch):
+        captured_config = []
+
+        async def fake_run_scan(**kwargs):
+            from basilisk.core.config import BasiliskConfig
+            cfg = BasiliskConfig.from_cli_args(**kwargs)
+            captured_config.append(cfg)
+            return 0
+
+        monkeypatch.setattr("basilisk.cli.scan.run_scan", fake_run_scan)
+        monkeypatch.setenv("GH_MODELS_TOKEN", "ghp_faketoken")
+
+        result = self.runner.invoke(cli, ["scan", "-t", "https://example.test", "--free"])
+        assert result.exit_code == 0
+        assert len(captured_config) == 1
+        cfg = captured_config[0]
+        assert cfg.free is True
+        assert cfg.target.provider == "github"
+        assert cfg.target.model == "gpt-4o-mini"

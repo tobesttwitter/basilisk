@@ -472,6 +472,28 @@ class TestBasiliskConfig:
         assert any("Campaign operator" in err for err in errors)
         assert any("approval" in err.lower() for err in errors)
 
+    def test_config_free_preset_with_token(self, monkeypatch):
+        monkeypatch.setenv("GH_MODELS_TOKEN", "ghp_fake123456789")
+        cfg = BasiliskConfig.from_cli_args(target="https://test.com", free=True)
+        assert cfg.free is True
+        assert cfg.target.provider == "github"
+        assert cfg.target.model == "gpt-4o-mini"
+        errors = cfg.validate()
+        assert errors == []
+
+    def test_config_free_preset_missing_token(self, monkeypatch):
+        monkeypatch.delenv("GH_MODELS_TOKEN", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("BASILISK_API_KEY", raising=False)
+        cfg = BasiliskConfig.from_cli_args(target="https://test.com", free=True)
+        assert cfg.free is True
+        assert cfg.target.provider == "github"
+        assert cfg.target.model == "gpt-4o-mini"
+        errors = cfg.validate()
+        assert len(errors) == 1
+        assert "GH_MODELS_TOKEN is missing" in errors[0]
+        assert "models:read" in errors[0]
+
 
 # ── Integration ──
 

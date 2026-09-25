@@ -120,6 +120,10 @@ This repository contains the full implementation used for experimental evaluatio
 # Install from PyPI
 pip install basilisk-ai
 
+# $0 Free setup using GitHub Models (no credit card or paid API keys required)
+export GH_MODELS_TOKEN="ghp_..."
+basilisk scan -t https://api.target.com/chat --free
+
 # Baseline scan against an OpenAI target
 export OPENAI_API_KEY="sk-..."
 basilisk scan -t https://api.target.com/chat -p openai
@@ -617,6 +621,7 @@ action.yml       # GitHub Action for CI/CD
 
 | Document | What It Covers |
 |----------|----------------|
+| [Free Setup Guide](docs/FREE_SETUP.md) | $0 setup using GitHub Models (`models:read` scope) |
 | [CLI Beginner Guide](docs/cli-beginner-guide.md) | First scan, basic commands, reading results |
 | [Desktop Beginner Guide](docs/desktop-beginner-guide.md) | First desktop scan, UI walkthrough, report export |
 | [CLI Advanced Guide](docs/cli-advanced-guide.md) | Campaign controls, module selection, evidence policy, advanced workflows |
