@@ -114,6 +114,9 @@ def _create_raw_provider(
             timeout=cfg.target.timeout,
             max_response_bytes=max_response_bytes,
         )
+    if cfg.target.provider == "mock":
+        from basilisk.providers.mock import MockProvider
+        return MockProvider()
     api_base = cfg.target.url if cfg.target.provider == "custom" else None
     from basilisk.providers.litellm_adapter import LiteLLMAdapter
 
