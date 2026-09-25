@@ -25,6 +25,13 @@ class RawEvidenceMode(str, Enum):
     FULL = "full"
 
 
+MIN_EVIDENCE_SCORE_THRESHOLDS: dict[str, float] = {
+    "production": 0.50,
+    "beta": 0.35,
+    "research": 0.20,
+}
+
+
 @dataclass
 class ScanPolicy:
     """Operator controls and enterprise guardrails for a scan."""

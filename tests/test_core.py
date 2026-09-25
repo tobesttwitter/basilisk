@@ -586,3 +586,90 @@ class TestIntegration:
             assert session.findings[0].metadata.get("policy_downgraded") is not True
         finally:
             await session.close("completed")
+
+    def test_production_finding_missing_replay_steps_downgraded(self):
+        from basilisk.policy.finding import enforce_finding_policy
+        from basilisk.policy.models import ScanPolicy
+
+        finding = Finding(
+            title="Synthetic weak finding missing replay steps",
+            severity=Severity.CRITICAL,
+            category=AttackCategory.PROMPT_INJECTION,
+            attack_module="basilisk.attacks.injection.direct",
+            evidence=build_evidence_bundle(
+                signals=[
+                    EvidenceSignal(
+                        name="direct_injection_markers",
+                        kind=EvidenceSignalKind.RESPONSE_MARKER,
+                        passed=True,
+                        weight=1.0,
+                    )
+                ],
+                replay_steps=[],
+            ),
+            validation_level=FindingValidationLevel.VERIFIED,
+        )
+        policy = ScanPolicy()
+        updated = enforce_finding_policy(finding, policy, final=True)
+        assert updated.severity == Severity.MEDIUM
+        assert updated.metadata["policy_downgraded"] is True
+        assert "replay_steps" in updated.metadata["downgrade_reason"]
+
+    def test_production_finding_missing_target_signal_match_downgraded(self):
+        from basilisk.policy.finding import enforce_finding_policy
+        from basilisk.policy.models import ScanPolicy
+
+        finding = Finding(
+            title="Synthetic finding missing target signal match",
+            severity=Severity.HIGH,
+            category=AttackCategory.PROMPT_INJECTION,
+            attack_module="basilisk.attacks.injection.direct",
+            evidence=build_evidence_bundle(
+                signals=[],
+                replay_steps=["Replay step 1"],
+            ),
+            validation_level=FindingValidationLevel.VERIFIED,
+        )
+        policy = ScanPolicy()
+        updated = enforce_finding_policy(finding, policy, final=True)
+        assert updated.severity == Severity.MEDIUM
+        assert updated.metadata["policy_downgraded"] is True
+        assert "target_signal_match" in updated.metadata["missing_evidence_requirements"]
+        assert "downgrade_reason" in updated.metadata
+
+    def test_finding_below_minimum_evidence_score_threshold_downgraded(self):
+        from basilisk.policy.finding import enforce_finding_policy
+        from basilisk.policy.models import ScanPolicy, MIN_EVIDENCE_SCORE_THRESHOLDS
+
+        assert MIN_EVIDENCE_SCORE_THRESHOLDS["production"] > MIN_EVIDENCE_SCORE_THRESHOLDS["beta"] > MIN_EVIDENCE_SCORE_THRESHOLDS["research"]
+
+        # Production tier finding with score < 0.50
+        prod_finding = Finding(
+            title="Weak production finding",
+            severity=Severity.HIGH,
+            category=AttackCategory.PROMPT_INJECTION,
+            attack_module="basilisk.attacks.injection.direct",
+            evidence=build_evidence_bundle(
+                signals=[
+                    EvidenceSignal(
+                        name="weak_signal",
+                        kind=EvidenceSignalKind.RESPONSE_MARKER,
+                        passed=True,
+                        weight=0.2,
+                    ),
+                    EvidenceSignal(
+                        name="failed_signal",
+                        kind=EvidenceSignalKind.RESPONSE_MARKER,
+                        passed=False,
+                        weight=0.8,
+                    ),
+                ],
+                replay_steps=["Step 1"],
+            ),
+            validation_level=FindingValidationLevel.VERIFIED,
+        )
+        policy = ScanPolicy()
+        updated = enforce_finding_policy(prod_finding, policy, final=True)
+        assert updated.severity == Severity.MEDIUM
+        assert updated.metadata["policy_downgraded"] is True
+        assert "below minimum threshold" in updated.metadata["downgrade_reason"]
