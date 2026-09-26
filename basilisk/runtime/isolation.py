@@ -282,6 +282,55 @@ def spawn_restricted_scan(arguments: dict[str, Any]) -> int:
         if value and not value.startswith(("@", "$")):
             raise ValueError(f"worker request contains inline secret field: {name}")
 
+    import asyncio
+    from basilisk.core.config import BasiliskConfig
+    from basilisk.runtime.orchestrator import check_provider_connection
+
+    cfg = BasiliskConfig.from_cli_args(
+        target=arguments.get("target", ""),
+        provider=arguments.get("provider", "openai"),
+        model=arguments.get("model", ""),
+        free=arguments.get("free", False),
+        api_key=arguments.get("api_key", ""),
+        auth=arguments.get("auth", ""),
+        mode=arguments.get("mode", "standard"),
+        evolve=arguments.get("evolve", True),
+        generations=arguments.get("generations", 5),
+        module=arguments.get("module"),
+        probe_id=arguments.get("probe_id"),
+        recon_module=arguments.get("recon_module"),
+        attacker_provider=arguments.get("attacker_provider", ""),
+        attacker_model=arguments.get("attacker_model", ""),
+        attacker_api_key=arguments.get("attacker_api_key", ""),
+        exit_on_first=arguments.get("exit_on_first", False),
+        diversity_mode=arguments.get("diversity_mode", "novelty"),
+        intent_weight=arguments.get("intent_weight", 0.15),
+        enable_cache=arguments.get("enable_cache", True),
+        include_research_modules=arguments.get("include_research_modules", False),
+        execution_mode=arguments.get("execution_mode", "validate"),
+        campaign_name=arguments.get("campaign_name", ""),
+        operator=arguments.get("operator", ""),
+        ticket=arguments.get("ticket", ""),
+        approval_required=arguments.get("approval_required", False),
+        approved=arguments.get("approved", False),
+        dry_run=arguments.get("dry_run", False),
+        max_findings=arguments.get("max_findings", 0),
+        stop_on_severity=arguments.get("stop_on_severity", ""),
+        allow_private_targets=arguments.get("allow_private_targets", False),
+        allow_insecure_http=arguments.get("allow_insecure_http", False),
+        isolated_environment=arguments.get("isolated_environment", False),
+        output=arguments.get("output_format", "html"),
+        report_type=arguments.get("report_type", "standard"),
+        output_dir=arguments.get("output_dir", "./basilisk-reports"),
+        no_dashboard=arguments.get("no_dashboard", False),
+        fail_on=arguments.get("fail_on", "high"),
+        verbose=arguments.get("verbose", False),
+        debug=arguments.get("debug", False),
+        skip_recon=arguments.get("skip_recon", False),
+        config=arguments.get("config", ""),
+    )
+    asyncio.run(check_provider_connection(cfg))
+
     limits = WorkerLimits.for_mode(str(arguments.get("mode", "standard")))
     with tempfile.TemporaryDirectory(prefix="basilisk-worker-") as temporary:
         request_path = Path(temporary) / "request.json"

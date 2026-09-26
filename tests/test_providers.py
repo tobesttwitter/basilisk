@@ -275,3 +275,40 @@ class TestWebSocketAdapter:
         assert captured["kwargs"]["host"] == "93.184.216.34"
         assert captured["kwargs"]["port"] == 9443
         assert captured["kwargs"]["proxy"] is None
+
+
+class TestProviderHealthCheckRelocation:
+    async def test_health_check_runs_outside_restricted_worker(self, monkeypatch):
+        from basilisk.core.config import BasiliskConfig
+        from basilisk.runtime.orchestrator import check_provider_connection
+
+        monkeypatch.delenv("BASILISK_RESTRICTED_WORKER", raising=False)
+        cfg = BasiliskConfig.from_cli_args(target="direct", provider="mock", model="test")
+
+        healthy, error_msg = await check_provider_connection(cfg)
+        assert healthy is True
+        assert error_msg is None
+
+    async def test_execute_scan_skips_health_check_inside_restricted_worker(self, monkeypatch):
+        from basilisk.core.config import BasiliskConfig
+        from basilisk.runtime.orchestrator import execute_scan
+        from basilisk.providers.mock import MockProvider
+
+        monkeypatch.setenv("BASILISK_RESTRICTED_WORKER", "1")
+        cfg = BasiliskConfig.from_cli_args(
+            target="direct", provider="mock", model="test", dry_run=True, skip_recon=True,
+        )
+
+        health_check_called = False
+
+        async def failing_health_check():
+            nonlocal health_check_called
+            health_check_called = True
+            return False, "Connection error inside restricted worker"
+
+        prov = MockProvider()
+        prov.health_check = failing_health_check
+
+        session = await execute_scan(cfg)
+        assert session is not None
+        assert not health_check_called

@@ -176,6 +176,30 @@ def create_provider(
     )
 
 
+async def check_provider_connection(
+    cfg: BasiliskConfig,
+    *,
+    prov: ProviderAdapter | None = None,
+    credential_override: str | None = None,
+) -> tuple[bool, str | None]:
+    """Verify provider reachability in the parent process before worker isolation."""
+    own_prov = False
+    if prov is None:
+        prov = create_provider(cfg, credential_override=credential_override)
+        own_prov = True
+    try:
+        from basilisk.runtime.isolation import bypass_health_check
+
+        with bypass_health_check():
+            healthy, error_msg = await prov.health_check()
+        if not healthy:
+            raise RuntimeError(f"Provider health check failed: {error_msg}")
+        return healthy, error_msg
+    finally:
+        if own_prov:
+            await prov.close()
+
+
 async def execute_scan(
     cfg: BasiliskConfig,
     *,
@@ -236,11 +260,9 @@ async def execute_scan(
             )
 
         _check_continue(stop_check)
-        from basilisk.runtime.isolation import bypass_health_check
-        with bypass_health_check():
-            healthy, error_msg = await prov.health_check()
-        if not healthy:
-            raise RuntimeError(f"Provider health check failed: {error_msg}")
+        import os
+        if os.environ.get("BASILISK_RESTRICTED_WORKER") != "1":
+            await check_provider_connection(cfg, prov=prov, credential_override=target_credential)
 
         if cfg.skip_recon or not cfg.mode_profile.run_recon:
             session.record_phase("recon_skipped")
