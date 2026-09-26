@@ -124,6 +124,8 @@ def test_worker_supervisor_rejects_inline_credentials():
 
 
 def test_worker_supervisor_passes_only_secret_references(monkeypatch):
+    from unittest.mock import AsyncMock
+
     captured = {}
 
     class FakeProcess:
@@ -144,6 +146,7 @@ def test_worker_supervisor_passes_only_secret_references(monkeypatch):
     monkeypatch.delenv("BASILISK_RESTRICTED_WORKER", raising=False)
     monkeypatch.setenv("OPENBLAS_NUM_THREADS", "4")
     monkeypatch.setattr("basilisk.runtime.isolation.subprocess.Popen", fake_popen)
+    monkeypatch.setattr("basilisk.runtime.orchestrator.check_provider_connection", AsyncMock(return_value=(True, None)))
     result = spawn_restricted_scan({
         "target": "https://example.test/v1/chat/completions",
         "mode": "quick",

@@ -18,6 +18,7 @@ from basilisk.runtime.request_engine import (
 
 __all__ = [
     "ScanHooks",
+    "check_provider_connection",
     "create_provider",
     "execute_scan",
     "resolve_attack_modules",
@@ -31,6 +32,7 @@ __all__ = [
 
 _ORCHESTRATOR_EXPORTS = {
     "ScanHooks",
+    "check_provider_connection",
     "create_provider",
     "execute_scan",
     "resolve_attack_modules",
