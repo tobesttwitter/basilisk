@@ -17,7 +17,7 @@ from basilisk.core.harm_assessment import HarmCategory, assess_harm
 from basilisk.evolution.crossover import crossover
 from basilisk.evolution.operators import ALL_OPERATORS
 from basilisk.evolution.randomness import random
-from basilisk.payloads.effectiveness import probe_effectiveness
+from basilisk.payloads.effectiveness import probe_effectiveness, record_candidate_metadata
 from basilisk.payloads.loader import Probe, load_probes
 
 STOP_WORDS = {
@@ -592,5 +592,10 @@ def run_generate(
 
     export_candidates_json(ranked, json_path)
     export_candidates_html(ranked, objective, html_path)
+
+    try:
+        record_candidate_metadata(ranked)
+    except Exception:
+        pass
 
     return json_path, html_path
