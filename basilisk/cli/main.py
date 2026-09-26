@@ -5,6 +5,7 @@ Commands:
   basilisk scan        — Run a full scan against a target
   basilisk recon       — Reconnaissance only
   basilisk generate    — Generate candidate prompts for an objective
+  basilisk feedback    — Ingest manual verification feedback and update effectiveness
   basilisk diff        — Differential scan across multiple models
   basilisk posture     — Guardrail posture assessment (recon-only)
   basilisk replay      — Replay a previous session
@@ -204,6 +205,24 @@ def generate_cmd(objective: str, count: int, output_dir: str) -> None:
     console.print(f"[green]✓[/green] Generated [bold]{count}[/bold] candidates.")
     console.print(f"  • JSON: [bold]{json_path}[/bold]")
     console.print(f"  • HTML: [bold]{html_path}[/bold]")
+
+
+@cli.command("feedback")
+@click.option("--input", "input_file", required=True, type=click.Path(exists=True, dir_okay=False), help="Path to input CSV file with header: candidate_id, prompt, result, notes")
+@click.option("--campaign", default="", help="Campaign name for grouping feedback")
+def feedback_cmd(input_file: str, campaign: str) -> None:
+    """Ingest manual verification feedback CSV and update effectiveness tracker."""
+    console.print(BANNER, style="bold red")
+    console.print()
+
+    from basilisk.cli.feedback import run_feedback
+
+    try:
+        run_feedback(input_file=input_file, campaign=campaign)
+    except ValueError as e:
+        raise click.BadParameter(str(e))
+    except Exception as e:
+        raise click.ClickException(str(e))
 
 
 @cli.command("recon")

@@ -74,6 +74,34 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_timestamp
             ON probe_results(timestamp);
+
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            candidate_id TEXT NOT NULL,
+            prompt TEXT NOT NULL,
+            result TEXT NOT NULL,
+            notes TEXT DEFAULT '',
+            campaign TEXT DEFAULT '',
+            timestamp TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS candidate_metadata (
+            candidate_id TEXT PRIMARY KEY,
+            prompt TEXT NOT NULL,
+            source_probe TEXT NOT NULL DEFAULT '',
+            mutation_used TEXT NOT NULL DEFAULT '',
+            harm_category TEXT NOT NULL DEFAULT '',
+            timestamp TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_feedback_candidate
+            ON feedback(candidate_id);
+
+        CREATE INDEX IF NOT EXISTS idx_feedback_campaign
+            ON feedback(campaign);
+
+        CREATE INDEX IF NOT EXISTS idx_candidate_metadata_id
+            ON candidate_metadata(candidate_id);
     """)
     _ensure_column(conn, "probe_results", "subcategory", "TEXT NOT NULL DEFAULT ''")
     _ensure_column(conn, "probe_results", "objective", "TEXT NOT NULL DEFAULT ''")
@@ -260,6 +288,183 @@ def probe_effectiveness(
             "overall_bypass_rate": round(total_bypasses / total_runs, 4) if total_runs > 0 else 0.0,
             "by_model": by_model,
             "by_archetype": by_archetype,
+        }
+    finally:
+        conn.close()
+
+
+def record_candidate_metadata(
+    candidates: list[dict[str, Any] | Any],
+    db_path: Path | None = None,
+) -> int:
+    """Record generated candidate metadata into candidate_metadata table.
+
+    Returns the number of candidates recorded.
+    """
+    if not candidates:
+        return 0
+
+    conn = _get_connection(db_path)
+    ts = datetime.now(timezone.utc).isoformat()
+    try:
+        rows = []
+        for c in candidates:
+            if hasattr(c, "to_dict"):
+                c_dict = c.to_dict()
+            elif isinstance(c, dict):
+                c_dict = c
+            else:
+                continue
+
+            cand_id = c_dict.get("id") or c_dict.get("candidate_id", "")
+            prompt = c_dict.get("prompt", "")
+            source_probe = c_dict.get("source_probe", "")
+            mutation_used = c_dict.get("mutation_used", "")
+            harm_category = c_dict.get("harm_category", "")
+
+            if cand_id:
+                rows.append((
+                    str(cand_id),
+                    str(prompt),
+                    str(source_probe),
+                    str(mutation_used),
+                    str(harm_category),
+                    ts,
+                ))
+
+        if rows:
+            conn.executemany(
+                """INSERT OR REPLACE INTO candidate_metadata
+                   (candidate_id, prompt, source_probe, mutation_used, harm_category, timestamp)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                rows,
+            )
+            conn.commit()
+            return len(rows)
+        return 0
+    finally:
+        conn.close()
+
+
+def record_feedback(
+    feedback_records: list[dict[str, Any]],
+    campaign: str = "",
+    db_path: Path | None = None,
+) -> int:
+    """Record manual verification feedback into the feedback table.
+
+    Returns the number of feedback records inserted.
+    """
+    if not feedback_records:
+        return 0
+
+    conn = _get_connection(db_path)
+    ts = datetime.now(timezone.utc).isoformat()
+    campaign_val = campaign if campaign is not None else ""
+    try:
+        rows = [
+            (
+                str(r["candidate_id"]),
+                str(r["prompt"]),
+                str(r["result"]).strip().lower(),
+                str(r.get("notes", "")),
+                campaign_val,
+                ts,
+            )
+            for r in feedback_records
+        ]
+        conn.executemany(
+            """INSERT INTO feedback
+               (candidate_id, prompt, result, notes, campaign, timestamp)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            rows,
+        )
+        conn.commit()
+        return len(rows)
+    finally:
+        conn.close()
+
+
+def get_feedback_stats(
+    campaign: str | None = None,
+    db_path: Path | None = None,
+) -> dict[str, Any]:
+    """Compute feedback stats including total tested, worked, failed, partial,
+    overall success rate, and success rates per mutation operator and per source probe.
+    """
+    conn = _get_connection(db_path)
+    try:
+        query = """
+            SELECT
+                f.candidate_id,
+                f.result,
+                COALESCE(NULLIF(c.mutation_used, ''), 'unknown') as mutation_used,
+                COALESCE(NULLIF(c.source_probe, ''), 'unknown') as source_probe
+            FROM feedback f
+            LEFT JOIN candidate_metadata c ON f.candidate_id = c.candidate_id
+        """
+        params: list[Any] = []
+        if campaign:
+            query += " WHERE f.campaign = ?"
+            params.append(campaign)
+
+        rows = conn.execute(query, params).fetchall()
+
+        total_tested = len(rows)
+        worked_count = sum(1 for r in rows if r[1] == "worked")
+        failed_count = sum(1 for r in rows if r[1] == "failed")
+        partial_count = sum(1 for r in rows if r[1] == "partial")
+
+        overall_success_rate = (
+            round((worked_count / total_tested) * 100.0, 2)
+            if total_tested > 0
+            else 0.0
+        )
+
+        by_operator: dict[str, dict[str, Any]] = {}
+        by_source_probe: dict[str, dict[str, Any]] = {}
+
+        for cand_id, res, op, probe_id in rows:
+            # Aggregate per operator
+            if op not in by_operator:
+                by_operator[op] = {"tested": 0, "worked": 0, "failed": 0, "partial": 0, "success_rate": 0.0}
+            by_operator[op]["tested"] += 1
+            if res == "worked":
+                by_operator[op]["worked"] += 1
+            elif res == "failed":
+                by_operator[op]["failed"] += 1
+            elif res == "partial":
+                by_operator[op]["partial"] += 1
+
+            # Aggregate per source probe
+            if probe_id not in by_source_probe:
+                by_source_probe[probe_id] = {"tested": 0, "worked": 0, "failed": 0, "partial": 0, "success_rate": 0.0}
+            by_source_probe[probe_id]["tested"] += 1
+            if res == "worked":
+                by_source_probe[probe_id]["worked"] += 1
+            elif res == "failed":
+                by_source_probe[probe_id]["failed"] += 1
+            elif res == "partial":
+                by_source_probe[probe_id]["partial"] += 1
+
+        for op, data in by_operator.items():
+            t = data["tested"]
+            w = data["worked"]
+            data["success_rate"] = round((w / t) * 100.0, 2) if t > 0 else 0.0
+
+        for probe_id, data in by_source_probe.items():
+            t = data["tested"]
+            w = data["worked"]
+            data["success_rate"] = round((w / t) * 100.0, 2) if t > 0 else 0.0
+
+        return {
+            "total_tested": total_tested,
+            "worked": worked_count,
+            "failed": failed_count,
+            "partial": partial_count,
+            "overall_success_rate": overall_success_rate,
+            "by_operator": by_operator,
+            "by_source_probe": by_source_probe,
         }
     finally:
         conn.close()
