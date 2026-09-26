@@ -94,6 +94,12 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
             timestamp TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS campaign_rounds (
+            campaign TEXT PRIMARY KEY,
+            current_round INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_feedback_candidate
             ON feedback(candidate_id);
 
@@ -342,6 +348,74 @@ def record_candidate_metadata(
             conn.commit()
             return len(rows)
         return 0
+    finally:
+        conn.close()
+
+
+def get_campaign_seeds(
+    campaign: str,
+    db_path: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Retrieve feedback records marked 'worked' or 'partial' for a campaign."""
+    conn = _get_connection(db_path)
+    try:
+        query = """
+            SELECT f.candidate_id, f.prompt, f.result, f.notes,
+                   COALESCE(c.source_probe, '') as source_probe,
+                   COALESCE(c.mutation_used, '') as mutation_used,
+                   COALESCE(c.harm_category, '') as harm_category
+            FROM feedback f
+            LEFT JOIN candidate_metadata c ON f.candidate_id = c.candidate_id
+            WHERE f.campaign = ? AND f.result IN ('worked', 'partial')
+            ORDER BY f.id ASC
+        """
+        rows = conn.execute(query, (campaign,)).fetchall()
+        return [
+            {
+                "candidate_id": r[0],
+                "prompt": r[1],
+                "result": r[2],
+                "notes": r[3],
+                "source_probe": r[4],
+                "mutation_used": r[5],
+                "harm_category": r[6],
+            }
+            for r in rows
+        ]
+    finally:
+        conn.close()
+
+
+def get_and_increment_campaign_round(
+    campaign: str,
+    db_path: Path | None = None,
+) -> int:
+    """Track and increment round counter per campaign in SQLite database.
+
+    Returns the new round number (1, 2, ...).
+    """
+    conn = _get_connection(db_path)
+    ts = datetime.now(timezone.utc).isoformat()
+    try:
+        row = conn.execute(
+            "SELECT current_round FROM campaign_rounds WHERE campaign = ?",
+            (campaign,),
+        ).fetchone()
+
+        if row is None:
+            new_round = 1
+            conn.execute(
+                "INSERT INTO campaign_rounds (campaign, current_round, updated_at) VALUES (?, ?, ?)",
+                (campaign, new_round, ts),
+            )
+        else:
+            new_round = row[0] + 1
+            conn.execute(
+                "UPDATE campaign_rounds SET current_round = ?, updated_at = ? WHERE campaign = ?",
+                (new_round, ts, campaign),
+            )
+        conn.commit()
+        return new_round
     finally:
         conn.close()
 
