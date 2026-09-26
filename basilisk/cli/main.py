@@ -225,6 +225,59 @@ def feedback_cmd(input_file: str, campaign: str) -> None:
         raise click.ClickException(str(e))
 
 
+@cli.command("evolve-interactive")
+@click.option("--campaign", required=True, help="Campaign name to evolve candidates from")
+@click.option("--count", default=50, type=int, help="Number of candidate prompts to generate")
+@click.option("--output-dir", default="./generate_output", help="Output directory for generated candidate files")
+def evolve_interactive_cmd(campaign: str, count: int, output_dir: str) -> None:
+    """Evolve next generation candidate prompts based on manual verification feedback from a campaign."""
+    console.print(BANNER, style="bold red")
+    console.print()
+
+    from basilisk.cli.evolve_interactive import run_evolve_interactive
+
+    console.print(f"[bold cyan]🐍 Evolving candidate prompts for campaign:[/bold cyan] {campaign}")
+    try:
+        json_path, html_path = run_evolve_interactive(campaign=campaign, count=count, output_dir=output_dir)
+        console.print(f"[green]✓[/green] Generated [bold]{count}[/bold] evolved candidates for campaign [bold]{campaign}[/bold].")
+        console.print(f"  • JSON: [bold]{json_path}[/bold]")
+        console.print(f"  • HTML: [bold]{html_path}[/bold]")
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise click.ClickException(str(e))
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+
+@cli.command("evolve")
+@click.option("--interactive", is_flag=True, help="Run interactive evolution based on campaign feedback")
+@click.option("--campaign", default="", help="Campaign name to evolve candidates from")
+@click.option("--count", default=50, type=int, help="Number of candidate prompts to generate")
+@click.option("--output-dir", default="./generate_output", help="Output directory for generated candidate files")
+def evolve_cmd(interactive: bool, campaign: str, count: int, output_dir: str) -> None:
+    """Evolve candidate prompts for a campaign."""
+    if not interactive:
+        raise click.UsageError("The 'evolve' command requires the --interactive flag (or use 'basilisk evolve-interactive').")
+    if not campaign:
+        raise click.BadParameter("Missing option '--campaign'.", param_hint="--campaign")
+
+    from basilisk.cli.evolve_interactive import run_evolve_interactive
+
+    console.print(BANNER, style="bold red")
+    console.print()
+    console.print(f"[bold cyan]🐍 Evolving candidate prompts for campaign:[/bold cyan] {campaign}")
+    try:
+        json_path, html_path = run_evolve_interactive(campaign=campaign, count=count, output_dir=output_dir)
+        console.print(f"[green]✓[/green] Generated [bold]{count}[/bold] evolved candidates for campaign [bold]{campaign}[/bold].")
+        console.print(f"  • JSON: [bold]{json_path}[/bold]")
+        console.print(f"  • HTML: [bold]{html_path}[/bold]")
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise click.ClickException(str(e))
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+
 @cli.command("recon")
 @click.option("-t", "--target", required=True, help="Target URL or API endpoint")
 @click.option("-p", "--provider", default="openai", help="LLM provider")
