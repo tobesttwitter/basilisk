@@ -5,6 +5,7 @@ Tests for Basilisk Provider Adapters.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import httpx
 
@@ -114,6 +115,29 @@ class TestLiteLLMAdapter:
         assert loaded_litellm.cache is None
         assert loaded_litellm.telemetry is False
         assert loaded_litellm.suppress_debug_info is True
+
+    def test_litellm_initialization_with_temp_access_and_tiktoken_cache(self, monkeypatch, tmp_path):
+        import os
+        import tempfile
+        from basilisk.providers.litellm_adapter import LiteLLMAdapter, _load_litellm
+        from basilisk.runtime.isolation import WorkerAuditPolicy
+
+        monkeypatch.delenv("CUSTOM_TIKTOKEN_CACHE_DIR", raising=False)
+        temp_dir = Path(tempfile.gettempdir()).resolve()
+        policy = WorkerAuditPolicy(
+            read_roots=(temp_dir,),
+            write_roots=(temp_dir,),
+        )
+
+        loaded_litellm = _load_litellm()
+        assert loaded_litellm is not None
+        assert "CUSTOM_TIKTOKEN_CACHE_DIR" in os.environ
+        cache_dir = Path(os.environ["CUSTOM_TIKTOKEN_CACHE_DIR"]).resolve()
+        assert cache_dir.is_relative_to(temp_dir) or cache_dir == temp_dir
+
+        adapter = LiteLLMAdapter(api_key="sk-test", provider="openai", default_model="gpt-4")
+        # Ensure policy allows opening tiktoken cache or temp files
+        policy("open", (cache_dir / "test.txt", "w", 0))
 
 
 class TestNVIDIAAdapter:

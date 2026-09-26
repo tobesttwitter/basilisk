@@ -190,3 +190,35 @@ def test_worker_policy_rejects_workspace_wide_output_directory(tmp_path, monkeyp
     monkeypatch.chdir(project_root)
     with pytest.raises(ValueError, match="too broad"):
         build_worker_audit_policy({"output_dir": "."}, request_path)
+
+
+def test_worker_audit_policy_allows_system_temp_directory(tmp_path):
+    import tempfile
+    request_path = tmp_path / "request.json"
+    request_path.write_text("{}", encoding="utf-8")
+    output_dir = tmp_path / "reports"
+    output_dir.mkdir()
+    policy = build_worker_audit_policy({"output_dir": str(output_dir)}, request_path)
+
+    temp_dir = Path(tempfile.gettempdir()).resolve()
+    temp_file = temp_dir / "basilisk_test_file.tmp"
+
+    # Reading and writing in system temp should be allowed
+    policy("open", (temp_file, "w", 0))
+    policy("open", (temp_file, "r", 0))
+
+
+def test_bypass_health_check_allows_restricted_operations(tmp_path):
+    from basilisk.runtime.isolation import bypass_health_check
+
+    policy = WorkerAuditPolicy(
+        read_roots=(),
+        write_roots=(),
+    )
+    forbidden_file = tmp_path / "forbidden.txt"
+
+    with pytest.raises(WorkerPolicyViolation, match="filesystem access denied"):
+        policy("open", (forbidden_file, "r", 0))
+
+    with bypass_health_check():
+        policy("open", (forbidden_file, "r", 0))

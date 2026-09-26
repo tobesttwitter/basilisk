@@ -27,6 +27,17 @@ def _load_litellm():
     (e.g., GitHub Actions, read-only filesystems, restricted sandboxes) where
     disk access / caching / telemetry file operations are blocked.
     """
+    import os
+    import tempfile
+
+    if "CUSTOM_TIKTOKEN_CACHE_DIR" not in os.environ:
+        tiktoken_dir = os.path.join(tempfile.gettempdir(), "basilisk_tiktoken_cache")
+        try:
+            os.makedirs(tiktoken_dir, exist_ok=True)
+        except Exception:
+            pass
+        os.environ["CUSTOM_TIKTOKEN_CACHE_DIR"] = tiktoken_dir
+
     import litellm
 
     try:
@@ -231,6 +242,17 @@ class LiteLLMAdapter(ProviderAdapter):
     def estimate_tokens(self, text: str) -> int:
         """Use tiktoken for accurate OpenAI token estimation, fallback to heuristic."""
         try:
+            import os
+            import tempfile
+
+            if "CUSTOM_TIKTOKEN_CACHE_DIR" not in os.environ:
+                tiktoken_dir = os.path.join(tempfile.gettempdir(), "basilisk_tiktoken_cache")
+                try:
+                    os.makedirs(tiktoken_dir, exist_ok=True)
+                except Exception:
+                    pass
+                os.environ["CUSTOM_TIKTOKEN_CACHE_DIR"] = tiktoken_dir
+
             import tiktoken
             enc = tiktoken.encoding_for_model(self._default_model)
             return len(enc.encode(text))
