@@ -102,14 +102,24 @@ class ScanSession:
     async def add_finding(self, finding: Finding) -> None:
         """Add a finding and persist it."""
         from basilisk.policy.finding import enforce_finding_policy
+        from basilisk.core.harm_assessment import is_tool_level_error, assess_harm
+
+        if is_tool_level_error(finding):
+            if not getattr(self.config, "strict", True):
+                import logging
+                logging.getLogger("basilisk.session").warning(
+                    "Tool-level error finding discarded: %s", finding.title or finding.response
+                )
+            return
 
         if self.config.max_findings and len(self.findings) >= self.config.max_findings:
             self.stop_requested = True
             self.stop_reason = f"maximum findings reached ({self.config.max_findings})"
             return
         if finding.harm_assessment is None:
-            from basilisk.core.harm_assessment import assess_harm
             finding.harm_assessment = assess_harm(finding)
+            if finding.harm_assessment is None and is_tool_level_error(finding):
+                return
         finding = enforce_finding_policy(finding, self.config.policy, final=False)
         finding.metadata = {
             **finding.metadata,

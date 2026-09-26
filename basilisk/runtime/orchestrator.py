@@ -8,6 +8,7 @@ instead of maintaining drift-prone duplicate implementations.
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass, replace
 from typing import Any, Awaitable, Callable
 
@@ -16,7 +17,9 @@ from basilisk.campaign import build_attack_graph, should_use_attack_graph, stage
 from basilisk.core.audit import AuditLogger
 from basilisk.core.config import BasiliskConfig
 from basilisk.core.finding import AttackCategory, Finding, Severity
-from basilisk.core.harm_assessment import assess_harm, HarmCategory
+from basilisk.core.harm_assessment import assess_harm, is_tool_level_error, HarmCategory
+
+logger = logging.getLogger("basilisk.runtime.orchestrator")
 from basilisk.core.redaction import sanitize_error_text
 from basilisk.core.session import ScanSession
 from basilisk.core.verification import verify_candidate
@@ -462,6 +465,14 @@ async def _run_attack_phase(
                 with request_module_context(mod.name):
                     module_findings = await mod.execute(prov, session, session.profile)
                 for finding in module_findings:
+                    if is_tool_level_error(finding):
+                        if not getattr(session.config, "strict", True):
+                            logger.warning(
+                                "Tool-level error detected from module %s: %s",
+                                mod.name,
+                                finding.response or finding.evidence or finding.title,
+                            )
+                        continue
                     if finding.harm_assessment is None:
                         finding.harm_assessment = assess_harm(finding)
                     if finding.severity in {Severity.HIGH, Severity.CRITICAL}:
@@ -591,6 +602,13 @@ async def _run_evolution_phase(
 
     async def on_breakthrough(individual, generation: int) -> None:
         _check_continue(stop_check)
+        if is_tool_level_error(individual.response):
+            if not getattr(session.config, "strict", True):
+                logger.warning(
+                    "Tool-level error detected in evolution breakthrough: %s",
+                    individual.response,
+                )
+            return
         finding = Finding(
             title=f"Evolution Breakthrough — Gen {generation}",
             severity=Severity.HIGH,
@@ -601,6 +619,13 @@ async def _run_evolution_phase(
             evolution_generation=generation,
             confidence=individual.fitness,
         )
+        if is_tool_level_error(finding):
+            if not getattr(session.config, "strict", True):
+                logger.warning(
+                    "Tool-level error detected in evolution finding: %s",
+                    finding.response,
+                )
+            return
         finding.harm_assessment = assess_harm(finding)
         await session.add_finding(finding)
         await _emit_finding(hooks, session.id, finding)
