@@ -265,6 +265,7 @@ class BasiliskConfig:
     skip_recon: bool = False
     session_db: str = "./basilisk-sessions.db"
     include_research_modules: bool = False
+    strict: bool = True
     persist_payloads: bool = False
     persist_responses: bool = False
     persist_conversations: bool = False
@@ -444,6 +445,8 @@ class BasiliskConfig:
             config.output.include_conversations = bool(kwargs["include_conversations"])
         if kwargs.get("include_raw_content") is not None:
             config.output.include_raw_content = bool(kwargs["include_raw_content"])
+        if kwargs.get("strict") is not None:
+            config.strict = bool(kwargs["strict"])
 
         if config.policy.retain_raw_findings:
             config.persist_payloads = True

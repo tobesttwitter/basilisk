@@ -108,8 +108,63 @@ _LOW_IMPACT_ROLEPLAY_PATTERNS = [
     re.compile(r"\b(arrr|scallywag|matey|fictional|story|poem)\b", re.IGNORECASE),
 ]
 
+_TOOL_ERROR_PATTERNS = [
+    re.compile(r"restricted worker policy", re.IGNORECASE),
+    re.compile(r"WorkerPolicyViolation", re.IGNORECASE),
+    re.compile(r"provider connection error", re.IGNORECASE),
+    re.compile(r"ProviderConnectionError", re.IGNORECASE),
+    re.compile(r"\bConnectionError\b", re.IGNORECASE),
+    re.compile(r"\bAPIConnectionError\b", re.IGNORECASE),
+    re.compile(r"InternalServerError", re.IGNORECASE),
+]
 
-def assess_harm(finding: Any) -> HarmAssessment:
+
+def is_tool_level_error(data: Any) -> bool:
+    """
+    Check if the given finding, response, or evidence represents a tool-level error
+    rather than a valid target vulnerability.
+    """
+    if data is None:
+        return False
+
+    text_parts: list[str] = []
+
+    if hasattr(data, "response") and data.response:
+        text_parts.append(str(data.response))
+    if hasattr(data, "payload") and data.payload:
+        text_parts.append(str(data.payload))
+    if hasattr(data, "title") and data.title:
+        text_parts.append(str(data.title))
+    if hasattr(data, "description") and data.description:
+        text_parts.append(str(data.description))
+    if hasattr(data, "evidence") and data.evidence:
+        text_parts.append(
+            str(data.evidence.to_dict() if hasattr(data.evidence, "to_dict") else data.evidence)
+        )
+    if hasattr(data, "metadata") and data.metadata:
+        text_parts.append(str(data.metadata))
+    if isinstance(data, dict):
+        text_parts.append(str(data))
+    elif isinstance(data, (str, Exception)):
+        text_parts.append(str(data))
+
+    corpus = " ".join(text_parts)
+    if not corpus:
+        return False
+
+    corpus_lower = corpus.lower()
+
+    if ("traceback" in corpus_lower or "file " in corpus_lower) and ("basilisk/" in corpus_lower or "basilisk\\" in corpus_lower):
+        return True
+
+    for pattern in _TOOL_ERROR_PATTERNS:
+        if pattern.search(corpus):
+            return True
+
+    return False
+
+
+def assess_harm(finding: Any) -> HarmAssessment | None:
     """
     Analyze a finding's module, payload, and response to assess harm severity and category.
 
@@ -117,8 +172,12 @@ def assess_harm(finding: Any) -> HarmAssessment:
         finding: A Finding object or dict containing attack_module, payload, response, category, etc.
 
     Returns:
-        HarmAssessment object detailing category, severity, confidence, and reasoning.
+        HarmAssessment object detailing category, severity, confidence, and reasoning,
+        or None if the finding/evidence represents a tool-level error.
     """
+    if is_tool_level_error(finding):
+        return None
+
     module = str(getattr(finding, "attack_module", "") or "").lower()
     payload = str(getattr(finding, "payload", "") or "")
     response = str(getattr(finding, "response", "") or "")

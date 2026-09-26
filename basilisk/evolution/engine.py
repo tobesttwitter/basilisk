@@ -180,6 +180,7 @@ class EvolutionEngine:
 
         stagnation_counter = 0
         prev_best_fitness = 0.0
+        best_individual_ever: Individual | None = None
         # Warm-up: don't allow stagnation exit during the first 30% of generations (min 3)
         warmup_gens = max(3, self.config.generations * 3 // 10)
 
@@ -192,6 +193,10 @@ class EvolutionEngine:
 
             # Evaluate current population
             await self._evaluate_population(goal, context)
+
+            if self.population.best:
+                if best_individual_ever is None or self.population.best.fitness > best_individual_ever.fitness:
+                    best_individual_ever = self.population.best
 
             # Check for breakthroughs (Relative Breakthrough Logic)
             # A breakthrough is any individual that:
@@ -351,7 +356,7 @@ class EvolutionEngine:
                 f"breakthroughs={len(result.breakthroughs)}"
             )
 
-        result.best_individual = self.population.best
+        result.best_individual = best_individual_ever or self.population.best
         result.total_generations = self.population.generation
         result.total_mutations = self._total_mutations
         result.total_evaluations = self._total_evaluations

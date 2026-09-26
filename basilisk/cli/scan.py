@@ -66,6 +66,7 @@ async def run_scan(
     input_price_per_million: float | None = None,
     output_price_per_million: float | None = None,
     baseline: str = "",
+    strict: bool = True,
     config: str = "",
 ) -> int:
     """Main scan execution pipeline."""
@@ -103,7 +104,7 @@ async def run_scan(
         report_type=report_type,
         output_dir=output_dir, no_dashboard=no_dashboard, fail_on=fail_on, 
         max_findings=max_findings,
-        verbose=verbose, debug=debug, skip_recon=skip_recon, config=config,
+        verbose=verbose, debug=debug, skip_recon=skip_recon, strict=strict, config=config,
     )
 
     preview = cfg.cost_preview(
