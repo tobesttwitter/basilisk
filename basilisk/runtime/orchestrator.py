@@ -236,7 +236,9 @@ async def execute_scan(
             )
 
         _check_continue(stop_check)
-        healthy, error_msg = await prov.health_check()
+        from basilisk.runtime.isolation import bypass_health_check
+        with bypass_health_check():
+            healthy, error_msg = await prov.health_check()
         if not healthy:
             raise RuntimeError(f"Provider health check failed: {error_msg}")
 

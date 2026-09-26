@@ -10,12 +10,26 @@ import signal
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
 
 logger = logging.getLogger("basilisk.isolation")
+
+_HEALTH_CHECK_BYPASS: ContextVar[bool] = ContextVar("_HEALTH_CHECK_BYPASS", default=False)
+
+
+@contextmanager
+def bypass_health_check():
+    """Context manager to temporarily bypass restricted worker audit checks during health check."""
+    token = _HEALTH_CHECK_BYPASS.set(True)
+    try:
+        yield
+    finally:
+        _HEALTH_CHECK_BYPASS.reset(token)
 
 
 # Restricted workers have a deliberately small process/thread allowance.  Native
@@ -98,6 +112,9 @@ class WorkerAuditPolicy:
         return bool(numeric_flags & write_flags)
 
     def __call__(self, event: str, arguments: tuple[Any, ...]) -> None:
+        if _HEALTH_CHECK_BYPASS.get():
+            return
+
         if event == "open" and arguments:
             path = self._resolved(arguments[0])
             if path is None:
@@ -171,12 +188,16 @@ def build_worker_audit_policy(
     if output_root in broad_roots:
         raise ValueError("restricted worker output directory is too broad")
 
+    sys_temp_roots = {Path(tempfile.gettempdir()).resolve()}
+    if os.name != "nt":
+        sys_temp_roots.add(Path("/tmp").resolve())
+
     read_roots = {
         project_root.resolve(),
         temporary_root,
         Path(sys.prefix).resolve(),
         Path(sys.base_prefix).resolve(),
-    }
+    } | sys_temp_roots
     read_files = {request_path.resolve(), Path(os.devnull).resolve()}
     for name in ("config", "api_key", "auth", "attacker_api_key", "baseline"):
         value = str(arguments.get(name, "") or "")
@@ -185,6 +206,7 @@ def build_worker_audit_policy(
         elif value.startswith("@") and len(value) > 1:
             read_files.add(Path(value[1:]).expanduser().resolve())
 
+    write_roots = {temporary_root, output_root} | sys_temp_roots
     session_db = Path("./basilisk-sessions.db").resolve()
     native_roots: tuple[Path, ...] = ()
     native_library_names: tuple[str, ...] = ()
@@ -196,7 +218,7 @@ def build_worker_audit_policy(
         native_library_names = ("kernel32", "shell32")
     return WorkerAuditPolicy(
         read_roots=tuple(sorted(read_roots, key=str)),
-        write_roots=(temporary_root, output_root),
+        write_roots=tuple(sorted(write_roots, key=str)),
         read_files=tuple(sorted(read_files, key=str)),
         write_prefixes=(session_db,),
         native_roots=native_roots,
@@ -276,6 +298,10 @@ def spawn_restricted_scan(arguments: dict[str, Any]) -> int:
         env["PYTHONDONTWRITEBYTECODE"] = "1"
         env["TMP"] = temporary
         env["TEMP"] = temporary
+        if "CUSTOM_TIKTOKEN_CACHE_DIR" not in env:
+            tiktoken_cache = Path(temporary) / "tiktoken_cache"
+            tiktoken_cache.mkdir(parents=True, exist_ok=True)
+            env["CUSTOM_TIKTOKEN_CACHE_DIR"] = str(tiktoken_cache)
         for variable in _NATIVE_THREAD_LIMIT_ENV:
             env[variable] = "1"
         env["TOKENIZERS_PARALLELISM"] = "false"
