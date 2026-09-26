@@ -608,8 +608,9 @@ jobs:
     sarif_file: basilisk-reports/*.sarif
 ```
 
-### Manual Demo Workflow in the Cloud
+### Manual Workflows in the Cloud
 
+#### Manual Demo Workflow
 You can run the Basilisk demo directly in GitHub Actions without installing local dependencies or configuring API keys:
 
 1. Navigate to the **Actions** tab in your GitHub repository.
@@ -617,6 +618,15 @@ You can run the Basilisk demo directly in GitHub Actions without installing loca
 3. Click **Run workflow** and select the branch to execute on.
 4. Once the workflow run completes, scroll down to the **Artifacts** section at the bottom of the run summary page.
 5. Download `basilisk-demo-report.zip` to retrieve the generated `demo_output/basilisk_demo_executive_report.html` file.
+
+#### Real Scan Workflow (via GitHub Models)
+You can also manually trigger a real security scan against the vulnerable test target (`https://basilisk-vulnbot.onrender.com/v1/chat/completions`) using GitHub Models:
+
+1. Ensure repository secret `GH_MODELS_TOKEN` is set (a Personal Access Token with `models:read` permission).
+2. Navigate to the **Actions** tab in your GitHub repository.
+3. Select the **Real Scan** workflow from the left sidebar.
+4. Click **Run workflow** and select the branch to execute on.
+5. Once complete, download the `real-scan-output` artifact from the run summary page to access the generated HTML executive report from `real_scan_output/`.
 
 ### GitLab CI
 
