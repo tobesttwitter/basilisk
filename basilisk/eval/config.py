@@ -88,6 +88,8 @@ class EvalTarget:
             from basilisk.core.config import _resolve_secret_reference
 
             return _resolve_secret_reference(self.api_key, purpose="eval API key")
+        if self.provider == "github":
+            return os.environ.get("GITHUB_API_KEY", "") or os.environ.get("GH_MODELS_TOKEN", "")
         env_mapping = {
             "openai": "OPENAI_API_KEY",
             "anthropic": "ANTHROPIC_API_KEY",
