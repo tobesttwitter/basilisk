@@ -4,6 +4,7 @@ Basilisk CLI — Main entry point with click + rich.
 Commands:
   basilisk scan        — Run a full scan against a target
   basilisk recon       — Reconnaissance only
+  basilisk generate    — Generate candidate prompts for an objective
   basilisk diff        — Differential scan across multiple models
   basilisk posture     — Guardrail posture assessment (recon-only)
   basilisk replay      — Replay a previous session
@@ -185,6 +186,24 @@ def scan(target, provider, model, free, api_key, auth, mode, cost_preview_only, 
     ))
     if exit_code:
         raise click.exceptions.Exit(exit_code)
+
+
+@cli.command("generate")
+@click.option("--objective", required=True, help="Attack objective or goal")
+@click.option("--count", default=50, type=int, help="Number of candidate prompts to generate")
+@click.option("--output-dir", default="./generate_output", help="Output directory for generated candidate files")
+def generate_cmd(objective: str, count: int, output_dir: str) -> None:
+    """Generate ranked candidate prompts for a user-defined objective."""
+    console.print(BANNER, style="bold red")
+    console.print()
+
+    from basilisk.cli.generate import run_generate
+
+    console.print(f"[bold cyan]🐍 Generating candidate prompts for objective:[/bold cyan] {objective}")
+    json_path, html_path = run_generate(objective=objective, count=count, output_dir=output_dir)
+    console.print(f"[green]✓[/green] Generated [bold]{count}[/bold] candidates.")
+    console.print(f"  • JSON: [bold]{json_path}[/bold]")
+    console.print(f"  • HTML: [bold]{html_path}[/bold]")
 
 
 @cli.command("recon")
