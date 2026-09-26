@@ -22,10 +22,26 @@ def _load_litellm():
     Recent LiteLLM versions initialize tokenizer data during import. Keeping
     that work off CLI help, configuration, and desktop startup paths preserves
     offline startup and read-only packaged installations.
+
+    Configures LiteLLM to operate safely in restricted worker environments
+    (e.g., GitHub Actions, read-only filesystems, restricted sandboxes) where
+    disk access / caching / telemetry file operations are blocked.
     """
     import litellm
 
-    litellm.suppress_debug_info = True
+    try:
+        litellm.suppress_debug_info = True
+        litellm.telemetry = False
+
+        if hasattr(litellm, "disable_cache"):
+            try:
+                litellm.disable_cache()
+            except Exception:
+                pass
+        litellm.cache = None
+    except Exception as err:
+        logger.debug("Failed configuring litellm restricted environment settings: %s", err)
+
     return litellm
 
 

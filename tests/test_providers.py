@@ -101,6 +101,20 @@ class TestLiteLLMAdapter:
         assert adapter.provider == "openai"
         assert adapter.default_model == "gpt-4"
 
+    def test_restricted_worker_environment_initialization(self, monkeypatch):
+        from basilisk.providers.litellm_adapter import _load_litellm
+        import litellm
+
+        def restricted_disable_cache():
+            raise PermissionError("Access denied by restricted worker policy: .litellm_cache")
+
+        monkeypatch.setattr(litellm, "disable_cache", restricted_disable_cache, raising=False)
+
+        loaded_litellm = _load_litellm()
+        assert loaded_litellm.cache is None
+        assert loaded_litellm.telemetry is False
+        assert loaded_litellm.suppress_debug_info is True
+
 
 class TestNVIDIAAdapter:
     def test_documented_defaults(self):
