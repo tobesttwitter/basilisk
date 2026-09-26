@@ -107,6 +107,9 @@ class ScanSession:
             self.stop_requested = True
             self.stop_reason = f"maximum findings reached ({self.config.max_findings})"
             return
+        if finding.harm_assessment is None:
+            from basilisk.core.harm_assessment import assess_harm
+            finding.harm_assessment = assess_harm(finding)
         finding = enforce_finding_policy(finding, self.config.policy, final=False)
         finding.metadata = {
             **finding.metadata,
@@ -426,6 +429,14 @@ class ScanSession:
     def exit_code(self) -> int:
         """CI/CD exit code based on fail_on threshold."""
         threshold = Severity(self.config.fail_on)
-        if self.max_severity.numeric >= threshold.numeric:
+        high_crit_findings = [
+            f for f in self.findings
+            if f.severity in {Severity.HIGH, Severity.CRITICAL}
+            and (f.harm_assessment is None or f.harm_assessment.severity.lower() in ("high", "critical"))
+        ]
+        if not high_crit_findings:
+            return 0
+        max_sev = max(high_crit_findings, key=lambda f: f.severity.numeric).severity
+        if max_sev.numeric >= threshold.numeric:
             return 1
         return 0

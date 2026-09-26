@@ -156,6 +156,7 @@ def _finding_context(
             for msg in finding.conversation
         ] if include_conversations and finding.conversation else [],
         "evidence": evidence_view,
+        "harm_assessment": finding.harm_assessment.to_dict() if finding.harm_assessment else None,
     }
 
 

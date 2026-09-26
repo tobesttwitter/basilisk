@@ -16,6 +16,7 @@ from functools import lru_cache
 from typing import Any
 
 from basilisk.core.evidence import EvidenceBundle
+from basilisk.core.harm_assessment import HarmAssessment
 from basilisk.core.redaction import redacted_descriptor, sanitize_value
 
 
@@ -164,6 +165,7 @@ class Finding:
     baseline_clean: bool = False
     response_fingerprint: str = ""
     false_positive_explanation: str = ""
+    harm_assessment: HarmAssessment | None = None
 
     @property
     def mitre_atlas_id(self) -> str:
@@ -217,6 +219,7 @@ class Finding:
             "baseline_clean": self.baseline_clean,
             "response_fingerprint": self.response_fingerprint,
             "false_positive_explanation": self.false_positive_explanation,
+            "harm_assessment": self.harm_assessment.to_dict() if self.harm_assessment else None,
         }
 
     def sanitized_dict(
@@ -286,6 +289,7 @@ class Finding:
             baseline_clean=bool(data.get("baseline_clean", False)),
             response_fingerprint=data.get("response_fingerprint", ""),
             false_positive_explanation=data.get("false_positive_explanation", ""),
+            harm_assessment=HarmAssessment.from_dict(data["harm_assessment"]) if data.get("harm_assessment") else None,
         )
 
     @property

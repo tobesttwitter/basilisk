@@ -20,6 +20,13 @@
         <span>Basis: <strong>{{ finding.evidence.confidence_basis }}</strong></span>
         {% endif %}
     </div>
+    {% if finding.harm_assessment %}
+    <div class="harm-assessment" style="margin: 8px 0; padding: 8px; background: rgba(255,255,255,0.05); border-left: 3px solid #3b82f6; border-radius: 4px;">
+        <span>Harm Category: <code>{{ finding.harm_assessment.category }}</code></span>
+        <span style="margin-left: 12px;">Harm Severity: <strong>{{ finding.harm_assessment.severity|upper }}</strong></span>
+        <p style="margin: 4px 0 0 0; font-size: 0.9em; color: #d1d5db;">Reasoning: {{ finding.harm_assessment.reasoning }}</p>
+    </div>
+    {% endif %}
     {% if finding.policy_downgraded %}
     <div class="downgraded">
         Downgraded from <strong>{{ finding.original_severity|upper }}</strong> because required evidence was incomplete.

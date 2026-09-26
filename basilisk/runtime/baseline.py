@@ -169,10 +169,25 @@ def normalize_current_findings(current: Any) -> list[BaselineFinding]:
     return normalized
 
 
-def compare_baseline(current: Any, baseline_report_path: str | Path) -> BaselineDiff:
+def compare_baseline(
+    current: Any,
+    baseline_report_path: str | Path,
+    high_critical_only: bool = False,
+) -> BaselineDiff:
     """Compare current findings against a baseline report and return the diff."""
     baseline_findings = load_baseline_report(baseline_report_path)
     current_findings = normalize_current_findings(current)
+
+    if high_critical_only:
+        def is_high_critical(bf: BaselineFinding) -> bool:
+            harm_data = bf.raw_data.get("harm_assessment") if isinstance(bf.raw_data, dict) else None
+            harm_sev = str(harm_data.get("severity", "") if isinstance(harm_data, dict) else "").lower()
+            if harm_sev:
+                return harm_sev in ("high", "critical")
+            return bf.severity.lower() in ("high", "critical")
+
+        baseline_findings = [f for f in baseline_findings if is_high_critical(f)]
+        current_findings = [f for f in current_findings if is_high_critical(f)]
 
     baseline_map = {f.identity: f for f in baseline_findings}
     current_map = {f.identity: f for f in current_findings}
