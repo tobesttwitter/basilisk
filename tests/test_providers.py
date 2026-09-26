@@ -102,6 +102,17 @@ class TestLiteLLMAdapter:
         assert adapter.provider == "openai"
         assert adapter.default_model == "gpt-4"
 
+    def test_github_provider_maps_gh_models_token_to_github_api_key(self, monkeypatch):
+        import os
+        from basilisk.providers.litellm_adapter import LiteLLMAdapter
+
+        monkeypatch.delenv("GITHUB_API_KEY", raising=False)
+        monkeypatch.setenv("GH_MODELS_TOKEN", "ghp_fake_github_token")
+
+        adapter = LiteLLMAdapter(provider="github")
+        assert os.environ.get("GITHUB_API_KEY") == "ghp_fake_github_token"
+        assert adapter._api_key == "ghp_fake_github_token"
+
     def test_restricted_worker_environment_initialization(self, monkeypatch):
         from basilisk.providers.litellm_adapter import _load_litellm
         import litellm

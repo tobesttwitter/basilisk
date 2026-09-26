@@ -508,8 +508,22 @@ class TestBasiliskConfig:
         errors = cfg.validate()
         assert errors == []
 
+    def test_config_free_preset_with_github_api_key_and_cli_args(self, monkeypatch):
+        monkeypatch.delenv("GH_MODELS_TOKEN", raising=False)
+        monkeypatch.setenv("GITHUB_API_KEY", "ghp_github_api_key_123")
+        cfg = BasiliskConfig.from_cli_args(
+            target="https://test.com", free=True, provider="github", model="gpt-4o"
+        )
+        assert cfg.free is True
+        assert cfg.target.provider == "github"
+        assert cfg.target.model == "gpt-4o"
+        assert cfg.target.resolve_api_key() == "ghp_github_api_key_123"
+        errors = cfg.validate()
+        assert errors == []
+
     def test_config_free_preset_missing_token(self, monkeypatch):
         monkeypatch.delenv("GH_MODELS_TOKEN", raising=False)
+        monkeypatch.delenv("GITHUB_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         monkeypatch.delenv("BASILISK_API_KEY", raising=False)
         cfg = BasiliskConfig.from_cli_args(target="https://test.com", free=True)

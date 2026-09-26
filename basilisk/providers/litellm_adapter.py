@@ -79,7 +79,11 @@ class LiteLLMAdapter(ProviderAdapter):
         # GitHub Models: free AI API via github.com/marketplace/models
         if provider == "github":
             import os
-            self._api_key = api_key or os.environ.get("GH_MODELS_TOKEN", "")
+            if not os.environ.get("GITHUB_API_KEY"):
+                gh_token = api_key or os.environ.get("GH_MODELS_TOKEN", "")
+                if gh_token:
+                    os.environ["GITHUB_API_KEY"] = gh_token
+            self._api_key = api_key or os.environ.get("GITHUB_API_KEY", "") or os.environ.get("GH_MODELS_TOKEN", "")
             self._api_base = api_base or "https://models.inference.ai.azure.com"
             self._custom_headers = custom_headers or {}
         else:

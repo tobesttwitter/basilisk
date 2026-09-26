@@ -216,6 +216,15 @@ _PROVIDER_ENV_MAP = {
 
 
 def get_api_key(provider: str) -> str:
+    if provider == "github":
+        return (
+            _api_key_store.get("GITHUB_API_KEY", "")
+            or _api_key_store.get("GH_MODELS_TOKEN", "")
+            or _secret_store.get("GITHUB_API_KEY")
+            or _secret_store.get("GH_MODELS_TOKEN")
+            or os.environ.get("GITHUB_API_KEY", "")
+            or os.environ.get("GH_MODELS_TOKEN", "")
+        )
     env_var = _PROVIDER_ENV_MAP.get(provider, "")
     if not env_var:
         return ""

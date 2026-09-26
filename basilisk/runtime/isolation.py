@@ -336,7 +336,10 @@ def spawn_restricted_scan(arguments: dict[str, Any]) -> int:
         skip_recon=arguments.get("skip_recon", False),
         config=arguments.get("config", ""),
     )
-    asyncio.run(check_provider_connection(cfg))
+    try:
+        asyncio.run(check_provider_connection(cfg))
+    except Exception as exc:
+        logger.warning("Provider health check failed, proceeding with scan... (%s)", exc)
 
     limits = WorkerLimits.for_mode(str(arguments.get("mode", "standard")))
     with tempfile.TemporaryDirectory(prefix="basilisk-worker-") as temporary:

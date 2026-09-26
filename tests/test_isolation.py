@@ -123,6 +123,47 @@ def test_worker_supervisor_rejects_inline_credentials():
         spawn_restricted_scan({"mode": "quick", "api_key": "nvapi-private"})
 
 
+def test_spawn_restricted_scan_health_check_failure_logs_warning_and_proceeds(monkeypatch, caplog):
+    from unittest.mock import AsyncMock
+    import logging
+
+    captured = {}
+
+    class FakeProcess:
+        pid = 1234
+
+        def __init__(self, command, **kwargs):
+            request = __import__("json").loads(
+                __import__("pathlib").Path(command[-1]).read_text("utf-8")
+            )
+            captured.update({"command": command, "kwargs": kwargs, "request": request})
+
+        def wait(self, timeout=None):
+            return 0
+
+    def fake_popen(command, **kwargs):
+        return FakeProcess(command, **kwargs)
+
+    monkeypatch.delenv("BASILISK_RESTRICTED_WORKER", raising=False)
+    monkeypatch.setattr("basilisk.runtime.isolation.subprocess.Popen", fake_popen)
+    monkeypatch.setattr(
+        "basilisk.runtime.orchestrator.check_provider_connection",
+        AsyncMock(side_effect=RuntimeError("Provider health check failed: OpenAIException - Connection error")),
+    )
+
+    with caplog.at_level(logging.WARNING, logger="basilisk.isolation"):
+        result = spawn_restricted_scan({
+            "target": "https://example.test/v1/chat/completions",
+            "mode": "quick",
+            "api_key": "@.secrets/provider-key",
+            "auth": "",
+            "attacker_api_key": "",
+        })
+
+    assert result == 0
+    assert "Provider health check failed, proceeding with scan..." in caplog.text
+
+
 def test_worker_supervisor_passes_only_secret_references(monkeypatch):
     from unittest.mock import AsyncMock
 

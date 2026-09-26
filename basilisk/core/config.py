@@ -88,6 +88,8 @@ class TargetConfig:
             "nvidia": "NVIDIA_API_KEY",
             "github": "GH_MODELS_TOKEN",
         }
+        if self.provider == "github":
+            return os.environ.get("GITHUB_API_KEY", "") or os.environ.get("GH_MODELS_TOKEN", "")
         env_var = env_mapping.get(self.provider, "BASILISK_API_KEY")
         return os.environ.get(env_var, "")
 
@@ -490,7 +492,7 @@ class BasiliskConfig:
                 self.target.provider = "github"
             if not self.target.model:
                 self.target.model = "gpt-4o-mini"
-            gh_token = os.environ.get("GH_MODELS_TOKEN", "") or self.target.resolve_api_key()
+            gh_token = os.environ.get("GITHUB_API_KEY", "") or os.environ.get("GH_MODELS_TOKEN", "") or self.target.resolve_api_key()
             if not gh_token:
                 errors.append(
                     "GH_MODELS_TOKEN is missing. Create a Personal Access Token with 'models:read' permission at https://github.com/settings/tokens and export GH_MODELS_TOKEN=your_token"
