@@ -186,6 +186,14 @@ def _write_markdown_report(
             f"**Module:** `{finding.attack_module}`",
             f"**Module Tier:** {finding_data['module_trust_tier']}",
             f"**Confidence:** {finding.confidence:.0%}",
+        ])
+        if finding.harm_assessment:
+            harm = finding.harm_assessment
+            lines.extend([
+                f"**Harm Category:** `{harm.category.value if hasattr(harm.category, 'value') else harm.category}` | **Harm Severity:** `{harm.severity.upper()}`",
+                f"**Harm Reasoning:** {harm.reasoning}",
+            ])
+        lines.extend([
             "",
             "**Payload:**",
             "```",

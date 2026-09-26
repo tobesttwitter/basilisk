@@ -16,6 +16,7 @@ from basilisk.campaign import build_attack_graph, should_use_attack_graph, stage
 from basilisk.core.audit import AuditLogger
 from basilisk.core.config import BasiliskConfig
 from basilisk.core.finding import AttackCategory, Finding, Severity
+from basilisk.core.harm_assessment import assess_harm, HarmCategory
 from basilisk.core.redaction import sanitize_error_text
 from basilisk.core.session import ScanSession
 from basilisk.core.verification import verify_candidate
@@ -461,6 +462,8 @@ async def _run_attack_phase(
                 with request_module_context(mod.name):
                     module_findings = await mod.execute(prov, session, session.profile)
                 for finding in module_findings:
+                    if finding.harm_assessment is None:
+                        finding.harm_assessment = assess_harm(finding)
                     if finding.severity in {Severity.HIGH, Severity.CRITICAL}:
                         await verify_candidate(prov, finding)
                     await session.reassess_finding(finding, final=True)
@@ -598,6 +601,7 @@ async def _run_evolution_phase(
             evolution_generation=generation,
             confidence=individual.fitness,
         )
+        finding.harm_assessment = assess_harm(finding)
         await session.add_finding(finding)
         await _emit_finding(hooks, session.id, finding)
 

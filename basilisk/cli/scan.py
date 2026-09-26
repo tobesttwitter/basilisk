@@ -237,7 +237,7 @@ async def run_scan(
         from basilisk.runtime.baseline import compare_baseline, print_baseline_diff_summary
 
         try:
-            diff = compare_baseline(session, baseline)
+            diff = compare_baseline(session, baseline, high_critical_only=True)
             print_baseline_diff_summary(diff, console)
             if diff.has_regressions:
                 return 1
