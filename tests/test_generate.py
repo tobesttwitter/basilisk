@@ -133,3 +133,89 @@ def test_run_generate_custom_count(tmp_path: Path) -> None:
     html_text = html_path.read_text(encoding="utf-8")
     assert "exfiltrate system API keys" in html_text
     assert "copyPrompt" in html_text
+
+
+def test_generate_objective_targeting(tmp_path: Path) -> None:
+    runner = CliRunner()
+    output_dir = tmp_path / "target_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "reveal emergency override code",
+            "--count",
+            "10",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+    assert "Matched" in result.output
+    assert "candidates." in result.output
+
+    json_file = output_dir / "candidates.json"
+    assert json_file.exists()
+
+    data = json.loads(json_file.read_text(encoding="utf-8"))
+    assert len(data) > 0
+
+    target_keywords = {"reveal", "emergency", "override", "code"}
+    matched_keyword_found = False
+    for item in data:
+        prompt_lower = item["prompt"].lower()
+        if any(kw in prompt_lower for kw in target_keywords):
+            matched_keyword_found = True
+            break
+    assert matched_keyword_found, "At least one candidate prompt should contain target objective keywords"
+
+
+def test_generate_no_matching_probes_strict(tmp_path: Path) -> None:
+    runner = CliRunner()
+    output_dir = tmp_path / "no_match_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "xyz nonMatchingUnicornKeyword123456",
+            "--count",
+            "10",
+            "--output-dir",
+            str(output_dir),
+            "--strict",
+        ],
+    )
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+    assert "Warning: Only 0 probes match the objective." in result.output
+    assert "Matched 0 probes to objective 'xyz nonMatchingUnicornKeyword123456'. Generated 0 candidates." in result.output
+
+    json_file = output_dir / "candidates.json"
+    assert json_file.exists()
+    data = json.loads(json_file.read_text(encoding="utf-8"))
+    assert len(data) == 0
+
+
+def test_generate_no_matching_probes_no_strict(tmp_path: Path) -> None:
+    runner = CliRunner()
+    output_dir = tmp_path / "no_strict_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "xyz nonMatchingUnicornKeyword123456",
+            "--count",
+            "10",
+            "--output-dir",
+            str(output_dir),
+            "--no-strict",
+        ],
+    )
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+    assert "Generated 10 candidates." in result.output
+
+    json_file = output_dir / "candidates.json"
+    assert json_file.exists()
+    data = json.loads(json_file.read_text(encoding="utf-8"))
+    assert len(data) == 10
