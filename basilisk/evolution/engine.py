@@ -10,6 +10,7 @@ This is the killer differentiator — no other AI red team tool has this.
 from __future__ import annotations
 
 import asyncio
+import copy
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -47,6 +48,14 @@ class EvolutionResult:
     operator_learning: dict[str, Any] = field(default_factory=dict)
     random_seed: int = 0
     lineage: list[dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def best_fitness(self) -> float:
+        if self.best_individual:
+            return self.best_individual.fitness
+        if self.generation_stats:
+            return max((s.get("best_fitness", 0.0) for s in self.generation_stats), default=0.0)
+        return 0.0
 
     @property
     def success(self) -> bool:
@@ -194,9 +203,9 @@ class EvolutionEngine:
             # Evaluate current population
             await self._evaluate_population(goal, context)
 
-            if self.population.best:
-                if best_individual_ever is None or self.population.best.fitness > best_individual_ever.fitness:
-                    best_individual_ever = self.population.best
+            for ind in self.population.individuals:
+                if best_individual_ever is None or ind.fitness > best_individual_ever.fitness:
+                    best_individual_ever = copy.deepcopy(ind)
 
             # Check for breakthroughs (Relative Breakthrough Logic)
             # A breakthrough is any individual that:
@@ -227,16 +236,21 @@ class EvolutionEngine:
                                 await cb
 
             # Generation stats
+            gen_best_fitness = max((ind.fitness for ind in self.population.individuals), default=0.0)
+            best_ind_in_gen = (
+                max(self.population.individuals, key=lambda x: x.fitness)
+                if self.population.individuals else None
+            )
             stats = {
                 "generation": gen + 1,
                 "total_generations": self.config.generations,
-                "best_fitness": self.population.best.fitness if self.population.best else 0.0,
+                "best_fitness": gen_best_fitness,
                 "avg_fitness": self.population.avg_fitness,
                 "population_size": len(self.population.individuals),
                 "mutations_applied": 0,
                 "breakthroughs": len(result.breakthroughs),
                 "diversity": self.population.diversity_score,
-                "best_payload": self.population.best.payload if self.population.best else "",
+                "best_payload": best_ind_in_gen.payload if best_ind_in_gen else "",
             }
             if self.novelty_archive:
                 stats["niche_count"] = self.novelty_archive.niche_count
@@ -251,7 +265,7 @@ class EvolutionEngine:
                 stats["top_operator"] = top_operator
 
             # Stagnation detection — only after warm-up period
-            current_best = self.population.best.fitness if self.population.best else 0.0
+            current_best = gen_best_fitness
             current_diversity = self.population.diversity_score
             if gen >= warmup_gens:
                 fitness_stagnant = abs(current_best - prev_best_fitness) < 0.05
@@ -356,7 +370,9 @@ class EvolutionEngine:
                 f"breakthroughs={len(result.breakthroughs)}"
             )
 
-        result.best_individual = best_individual_ever or self.population.best
+        result.best_individual = best_individual_ever or (
+            copy.deepcopy(self.population.best) if self.population.best else None
+        )
         result.total_generations = self.population.generation
         result.total_mutations = self._total_mutations
         result.total_evaluations = self._total_evaluations
@@ -408,30 +424,11 @@ class EvolutionEngine:
         conc = getattr(self.config, "max_concurrent", 5)
         semaphore = asyncio.Semaphore(conc)
 
-        async def eval_one(ind: Individual) -> None:
-            # Check cache first
+        async def fetch_response(ind: Individual) -> tuple[str, bool]:
             if self.cache:
                 cached = self.cache.get(ind.payload, self._context_hash)
                 if cached is not None:
-                    curiosity_bonus = self.behavioral_space.curiosity_bonus(cached.response)
-                    fitness_result = evaluate_fitness(
-                        cached.response, goal, self._seen_responses,
-                        intent_score=(
-                            self.intent_tracker.score_payload(ind.payload)
-                            if self.intent_tracker else None
-                        ),
-                        intent_weight=self._intent_weight,
-                        novelty_weight=getattr(self.config, "novelty_weight", 0.12),
-                        target_signal_weight=getattr(self.config, "target_signal_weight", 0.18),
-                        exploit_evidence_weight=getattr(self.config, "exploit_evidence_weight", 0.28),
-                        refusal_weight=getattr(self.config, "refusal_weight", 0.16),
-                        curiosity_bonus=curiosity_bonus,
-                    )
-                    self._apply_fitness_result(ind, cached.response, fitness_result)
-                    self._seen_responses.add(cached.response[:200])
-                    self.behavioral_space.update(cached.response, fitness_result.total_score)
-                    return
-
+                    return cached.response, True
             async with semaphore:
                 try:
                     messages = list(context) + [
@@ -442,41 +439,46 @@ class EvolutionEngine:
                         temperature=self.config.temperature,
                         max_tokens=2048,
                     )
-                    ind.response = resp.content
-                    self._seen_responses.add(resp.content[:200])
-                    curiosity_bonus = self.behavioral_space.curiosity_bonus(resp.content)
-
-                    fitness_result = evaluate_fitness(
-                        resp.content, goal, self._seen_responses,
-                        intent_score=(
-                            self.intent_tracker.score_payload(ind.payload)
-                            if self.intent_tracker else None
-                        ),
-                        intent_weight=self._intent_weight,
-                        novelty_weight=getattr(self.config, "novelty_weight", 0.12),
-                        target_signal_weight=getattr(self.config, "target_signal_weight", 0.18),
-                        exploit_evidence_weight=getattr(self.config, "exploit_evidence_weight", 0.28),
-                        refusal_weight=getattr(self.config, "refusal_weight", 0.16),
-                        curiosity_bonus=curiosity_bonus,
-                    )
-                    self._apply_fitness_result(ind, resp.content, fitness_result)
-                    self.behavioral_space.update(resp.content, fitness_result.total_score)
                     self._total_evaluations += 1
-
-                    # Store in cache
-                    if self.cache:
-                        self.cache.put(
-                            ind.payload, resp.content,
-                            fitness_result.total_score, self._context_hash
-                        )
+                    return resp.content, False
                 except Exception as e:
                     logger.error(f"Evaluation failed: {e}")
-                    ind.fitness = 0.0
-                    ind.objectives = {}
-                    ind.behavioral_profile = {}
+                    return "", False
 
-        tasks = [eval_one(ind) for ind in self.population.individuals]
-        await asyncio.gather(*tasks)
+        tasks = [fetch_response(ind) for ind in self.population.individuals]
+        eval_results = await asyncio.gather(*tasks)
+
+        for ind, (response_text, is_cached) in zip(self.population.individuals, eval_results):
+            if not response_text:
+                ind.fitness = 0.0
+                ind.objectives = {}
+                ind.behavioral_profile = {}
+                continue
+
+            ind.response = response_text
+            curiosity_bonus = self.behavioral_space.curiosity_bonus(response_text)
+            fitness_result = evaluate_fitness(
+                response_text, goal, self._seen_responses,
+                intent_score=(
+                    self.intent_tracker.score_payload(ind.payload)
+                    if self.intent_tracker else None
+                ),
+                intent_weight=self._intent_weight,
+                novelty_weight=getattr(self.config, "novelty_weight", 0.12),
+                target_signal_weight=getattr(self.config, "target_signal_weight", 0.18),
+                exploit_evidence_weight=getattr(self.config, "exploit_evidence_weight", 0.28),
+                refusal_weight=getattr(self.config, "refusal_weight", 0.16),
+                curiosity_bonus=curiosity_bonus,
+            )
+            self._apply_fitness_result(ind, response_text, fitness_result)
+            self._seen_responses.add(response_text[:200])
+            self.behavioral_space.update(response_text, fitness_result.total_score)
+            if self.cache and not is_cached:
+                self.cache.put(
+                    ind.payload, response_text,
+                    fitness_result.total_score, self._context_hash
+                )
+
         self._learn_from_population(goal)
 
     async def _produce_offspring(self, goal: AttackGoal) -> list[Individual]:
