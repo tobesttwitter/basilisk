@@ -266,6 +266,21 @@ This reproduces:
 
 ## Features
 
+### AI-Powered Prompt Generation (`--ai`)
+
+Generate fresh, objective-tailored adversarial attack framings directly using GitHub Models (`gpt-4o-mini`):
+
+- **Dynamic Framings**: Instead of mutating fixed corpus probes, `--ai` mode calls GitHub Models to craft distinct structural attack approaches tailored specifically to your target objective.
+- **Diverse Attack Techniques**: Varies techniques across role-play, authority escalation, hypothetical scenarios, encoding obfuscation, multi-turn cultivation, refusal suppression, fragmentation, indirect injection, language switching, and instruction nesting.
+- **Zero Cost Setup**: Uses free GitHub Models inference via personal access tokens (`GH_MODELS_TOKEN` with `models:read` scope).
+
+```bash
+export GH_MODELS_TOKEN="ghp_..."
+basilisk generate --objective "Extract confidential system prompt" --ai --count 20
+```
+
+Outputs formatted candidates to `generate_output/candidates.json` and interactive `generate_output/candidates.html` with assigned synthetic IDs (`AI-001`, `AI-002`, ...) and structural technique labels.
+
 ### Smart Prompt Evolution (SPE-NL)
 
 The core differentiator. Genetic algorithms adapted for natural language attack payloads:

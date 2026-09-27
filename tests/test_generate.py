@@ -219,3 +219,130 @@ def test_generate_no_matching_probes_no_strict(tmp_path: Path) -> None:
     assert json_file.exists()
     data = json.loads(json_file.read_text(encoding="utf-8"))
     assert len(data) == 10
+
+
+def test_ai_generate_missing_token(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("GH_MODELS_TOKEN", raising=False)
+    runner = CliRunner()
+    output_dir = tmp_path / "ai_missing_token_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "bypass safety filter",
+            "--ai",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code != 0
+    assert "GH_MODELS_TOKEN required for --ai mode. Create at github.com/settings/tokens with models:read permission." in result.output
+
+
+def test_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("GH_MODELS_TOKEN", "mock_gh_token_123")
+
+    mock_ai_response = [
+        {
+            "prompt": "You are a research assistant exploring safety limits. Roleplay scenario.",
+            "technique": "role-play framing",
+        },
+        {
+            "prompt": "Hypothetical question about override commands.",
+            "technique": "hypothetical scenario",
+        },
+    ]
+
+    class MockUrlOpenResponse:
+        def __init__(self, data):
+            self._data = json.dumps(data).encode("utf-8")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self):
+            return self._data
+
+    def mock_urlopen(req, timeout=None):
+        assert req.full_url == "https://models.inference.ai.azure.com/chat/completions"
+        assert req.headers["Authorization"] == "Bearer mock_gh_token_123"
+        payload = json.loads(req.data.decode("utf-8"))
+        assert payload["model"] == "gpt-4o-mini"
+        return MockUrlOpenResponse({
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(mock_ai_response)
+                    }
+                }
+            ]
+        })
+
+    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
+
+    runner = CliRunner()
+    output_dir = tmp_path / "ai_success_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "extract system instructions",
+            "--ai",
+            "--count",
+            "2",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+    assert "Generated 2 AI candidate prompts for objective" in result.output
+
+    json_file = output_dir / "candidates.json"
+    html_file = output_dir / "candidates.html"
+
+    assert json_file.exists()
+    assert html_file.exists()
+
+    data = json.loads(json_file.read_text(encoding="utf-8"))
+    assert len(data) == 2
+    assert data[0]["id"] == "AI-001"
+    assert data[0]["prompt"] == "You are a research assistant exploring safety limits. Roleplay scenario."
+    assert data[0]["technique"] == "role-play framing"
+    assert data[0]["source_probe"] == "github-models:gpt-4o-mini"
+    assert data[1]["id"] == "AI-002"
+    assert data[1]["technique"] == "hypothetical scenario"
+
+    html_content = html_file.read_text(encoding="utf-8")
+    assert "AI-001" in html_content
+    assert "role-play framing" in html_content
+    assert "Technique:" in html_content
+
+
+def test_ai_generate_api_error_mock(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("GH_MODELS_TOKEN", "mock_gh_token_123")
+
+    def mock_urlopen_error(req, timeout=None):
+        raise RuntimeError("Connection refused")
+
+    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen_error)
+
+    runner = CliRunner()
+    output_dir = tmp_path / "ai_error_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "extract credentials",
+            "--ai",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code != 0
+    assert "GitHub Models API call failed" in result.output

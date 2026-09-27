@@ -211,18 +211,22 @@ def report_cmd(campaign: str, fmt: str, output_dir: str, finalize: bool) -> None
 
 @cli.command("generate")
 @click.option("--objective", required=True, help="Attack objective or goal")
-@click.option("--count", default=50, type=int, help="Number of candidate prompts to generate")
+@click.option("--count", default=20, type=int, help="Number of candidate prompts to generate")
 @click.option("--output-dir", default="./generate_output", help="Output directory for generated candidate files")
 @click.option("--strict/--no-strict", default=True, help="Enforce minimum probe match score to objective")
-def generate_cmd(objective: str, count: int, output_dir: str, strict: bool) -> None:
+@click.option("--ai", is_flag=True, default=False, help="Use GitHub Models (gpt-4o-mini) to generate fresh adversarial framings")
+def generate_cmd(objective: str, count: int, output_dir: str, strict: bool, ai: bool) -> None:
     """Generate ranked candidate prompts for a user-defined objective."""
     console.print(BANNER, style="bold red")
     console.print()
 
     from basilisk.cli.generate import run_generate
 
-    console.print(f"[bold cyan]🐍 Generating candidate prompts for objective:[/bold cyan] {objective}")
-    json_path, html_path = run_generate(objective=objective, count=count, output_dir=output_dir, strict=strict)
+    if ai:
+        console.print(f"[bold cyan]🐍 Generating AI-powered adversarial framings for objective:[/bold cyan] {objective}")
+    else:
+        console.print(f"[bold cyan]🐍 Generating candidate prompts for objective:[/bold cyan] {objective}")
+    json_path, html_path = run_generate(objective=objective, count=count, output_dir=output_dir, strict=strict, ai=ai)
     console.print(f"  • JSON: [bold]{json_path}[/bold]")
     console.print(f"  • HTML: [bold]{html_path}[/bold]")
 
