@@ -700,10 +700,22 @@ To view candidate HTML reports on mobile devices with fully functional clipboard
 1. Navigate to the **Actions** tab in your GitHub repository (on desktop or GitHub Mobile).
 2. Select **Offline Red-Teaming Pipeline** from the left sidebar.
 3. Click **Run workflow** and select your target command from the dropdown:
-   - **`generate`**: Set `command` to `generate`, specify your attack goal in `objective` (e.g. `Extract system prompt`), and set `count` (default: 50).
+   - **`generate`**: Set `command` to `generate`, specify your attack goal in `objective` (e.g. `Extract system prompt`), and set `count` (default: 50). Optionally enable AI generation by setting `ai_mode` to `true` and selecting an `ai_provider`.
    - **`feedback`**: Ensure `feedback/<campaign>.csv` is uploaded. Set `command` to `feedback` and specify `campaign` (e.g. `campaign1`).
    - **`evolve`**: Set `command` to `evolve`, specify `campaign` (e.g. `campaign1`), and set `count` (default: 50).
    - **`report`**: Set `command` to `report`, specify `campaign` (e.g. `campaign1`), and select `report_format` (`markdown` or `html`).
+
+#### AI Generation Inputs
+
+- `ai_mode`: set to `true` to use AI generation instead of corpus mutation
+- `ai_provider`: choose `github` (GitHub Models) or `puter` (Puter's free API)
+
+*Example run:*
+- `command`: `generate`
+- `objective`: `"reveal the emergency override code"`
+- `ai_mode`: `true`
+- `ai_provider`: `puter`
+- `count`: `15`
 
 ### Downloading Artifacts
 
