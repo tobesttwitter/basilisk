@@ -53,11 +53,31 @@ def test_cli_generate_command(tmp_path: Path) -> None:
     html_content = html_file.read_text(encoding="utf-8")
     assert "<!DOCTYPE html>" in html_content
     assert "navigator.clipboard.writeText" in html_content
+    assert "window.isSecureContext" in html_content
+    assert "document.execCommand('copy')" in html_content
     assert "extract biological threat information" in html_content
     assert "GEN-001" in html_content
+    assert "Download Results CSV" in html_content
+    assert "result-btn worked" in html_content
+    assert "result-btn failed" in html_content
+    assert "result-btn partial" in html_content
+    assert "notes-input" in html_content
+    assert "localStorage" in html_content
+    assert "new Blob" in html_content
 
 
 def test_run_generate_custom_count(tmp_path: Path) -> None:
+    """
+    Test custom count prompt generation and HTML report features.
+
+    Manual verification steps for generated HTML (offline / file:// protocol):
+    1. Open generated candidates.html directly in a browser (e.g. file:///path/to/candidates.html).
+    2. Click 'Copy Prompt' on candidate items: verify button text briefly shows 'Copied!' for 1.5s and prompt is in clipboard.
+    3. Click 'Worked', 'Failed', or 'Partial' on candidates: verify selected button is highlighted and progress counter updates.
+    4. Type notes in the optional notes input field under candidate items.
+    5. Refresh the page: verify chosen result button state and notes persist via localStorage.
+    6. Click 'Download Results CSV': verify candidate_feedback.csv is downloaded containing candidate_id, prompt, result, notes.
+    """
     output_dir = tmp_path / "custom_out"
     json_path, html_path = run_generate(
         objective="exfiltrate system API keys",
@@ -77,3 +97,6 @@ def test_run_generate_custom_count(tmp_path: Path) -> None:
     html_text = html_path.read_text(encoding="utf-8")
     assert "exfiltrate system API keys" in html_text
     assert "copyPrompt" in html_text
+    assert "downloadCsv" in html_text
+    assert "saveCandidateState" in html_text
+    assert "loadSavedState" in html_text
