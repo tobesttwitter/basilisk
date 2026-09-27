@@ -52,9 +52,65 @@ def test_cli_generate_command(tmp_path: Path) -> None:
 
     html_content = html_file.read_text(encoding="utf-8")
     assert "<!DOCTYPE html>" in html_content
+    assert "window.isSecureContext" in html_content
     assert "navigator.clipboard.writeText" in html_content
+    assert "execCommand('copy')" in html_content
+    assert "1500" in html_content
+    assert "Worked" in html_content
+    assert "Failed" in html_content
+    assert "Partial" in html_content
+    assert "Download Results CSV" in html_content
+    assert "notes-input" in html_content
+    assert "localStorage" in html_content
     assert "extract biological threat information" in html_content
     assert "GEN-001" in html_content
+
+
+def test_export_candidates_html_interactive_features(tmp_path: Path) -> None:
+    from basilisk.cli.generate import GeneratedCandidate, export_candidates_html
+
+    candidates = [
+        GeneratedCandidate(
+            id="GEN-001",
+            prompt="Test prompt string",
+            source_probe="probe-1",
+            mutation_used="raw_probe",
+            harm_category="SAFETY_CRITICAL_BYPASS",
+            rank=1,
+            score=5.0,
+        )
+    ]
+    html_path = tmp_path / "interactive_candidates.html"
+    export_candidates_html(candidates, "Test Objective", html_path)
+
+    assert html_path.exists()
+    content = html_path.read_text(encoding="utf-8")
+
+    # Verify two-tier copy logic & feedback timeout
+    assert "window.isSecureContext" in content
+    assert "navigator.clipboard.writeText" in content
+    assert "execCommand('copy')" in content
+    assert "1500" in content  # 1.5s confirmation duration
+
+    # Verify worked/failed/partial buttons
+    assert "setResult('GEN-001', 'worked')" in content
+    assert "setResult('GEN-001', 'failed')" in content
+    assert "setResult('GEN-001', 'partial')" in content
+
+    # Verify notes input
+    assert "notes-GEN-001" in content
+    assert "updateNotes('GEN-001', this.value)" in content
+
+    # Verify CSV download and Blob usage
+    assert "downloadCSV()" in content
+    assert "Download Results CSV" in content
+    assert "'candidate_id', 'prompt', 'result', 'notes'" in content
+    assert "new Blob(" in content
+    assert "setAttribute('download'" in content
+
+    # Verify localStorage persistence
+    assert "basilisk_cand_" in content
+    assert "getCandidateState" in content
 
 
 def test_run_generate_custom_count(tmp_path: Path) -> None:

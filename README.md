@@ -648,6 +648,17 @@ generate  ──►  manual verify  ──►  upload CSV  ──►  feedback  
 6. **Repeat**: Iterate through manual testing, uploading feedback, and evolving until desired coverage or bypass is achieved.
 7. **`report`**: Generate or finalize the campaign security report.
 
+### Offline Candidate Workflow
+
+When performing manual verification on mobile or desktop:
+
+1. **Open HTML Report**: Extract the generated candidate ZIP and open `candidates.html` directly in your web browser (supports `file://` protocol).
+2. **Copy Prompts**: Tap the **Copy Prompt** button next to any candidate prompt. The fallback clipboard handler works offline on all modern mobile browsers.
+3. **Test Target**: Paste and execute the copied prompt against your target LLM application or interface.
+4. **Mark Results**: Tap **Worked**, **Failed**, or **Partial** next to the candidate to record its outcome. Progress and optional notes are automatically saved to `localStorage`.
+5. **Download CSV**: Tap **Download Results CSV** at the top of the report to generate a CSV file containing all marked candidates (`candidate_id,prompt,result,notes`).
+6. **Upload Feedback**: Save the downloaded CSV to `feedback/<campaign>.csv` in the repository to feed the next evolution round or update campaign stats.
+
 ### Triggering Commands via GitHub Actions
 
 1. Navigate to the **Actions** tab in your GitHub repository (on desktop or GitHub Mobile).
