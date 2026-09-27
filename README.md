@@ -659,6 +659,16 @@ When performing manual verification on mobile or desktop:
 5. **Download CSV**: Tap **Download Results CSV** at the top of the report to generate a CSV file containing all marked candidates (`candidate_id,prompt,result,notes`).
 6. **Upload Feedback**: Save the downloaded CSV to `feedback/<campaign>.csv` in the repository to feed the next evolution round or update campaign stats.
 
+### Mobile Workflow via GitHub Pages
+
+To view candidate HTML reports on mobile devices with fully functional clipboard copy and CSV download buttons over HTTPS:
+
+- Generate candidates by running the Red Team Pipeline workflow with command: `generate`
+- Note the run ID (visible in the URL of the run)
+- Run the new "Publish Candidates" workflow with that run ID
+- The candidates will be available at https://tobesttwitter.github.io/basilisk/
+- ⚠️ Warning: This URL is public. Only publish test outputs or non-confidential candidates. For real red-teaming work, do not use this workflow.
+
 ### Triggering Commands via GitHub Actions
 
 1. Navigate to the **Actions** tab in your GitHub repository (on desktop or GitHub Mobile).
