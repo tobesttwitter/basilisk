@@ -214,19 +214,25 @@ def report_cmd(campaign: str, fmt: str, output_dir: str, finalize: bool) -> None
 @click.option("--count", default=20, type=int, help="Number of candidate prompts to generate")
 @click.option("--output-dir", default="./generate_output", help="Output directory for generated candidate files")
 @click.option("--strict/--no-strict", default=True, help="Enforce minimum probe match score to objective")
-@click.option("--ai", is_flag=True, default=False, help="Use GitHub Models (gpt-4o-mini) to generate fresh adversarial framings")
-def generate_cmd(objective: str, count: int, output_dir: str, strict: bool, ai: bool) -> None:
+@click.option("--ai", is_flag=True, default=False, help="Use AI provider (GitHub Models or Puter) to generate fresh adversarial framings")
+@click.option("--ai-provider", default="github", type=click.Choice(["github", "puter"]), help="AI provider for prompt generation (github or puter)")
+@click.pass_context
+def generate_cmd(ctx: click.Context, objective: str, count: int, output_dir: str, strict: bool, ai: bool, ai_provider: str) -> None:
     """Generate ranked candidate prompts for a user-defined objective."""
     console.print(BANNER, style="bold red")
     console.print()
 
     from basilisk.cli.generate import run_generate
 
+    if ctx.get_parameter_source("ai_provider") != click.core.ParameterSource.DEFAULT:
+        ai = True
+
     if ai:
-        console.print(f"[bold cyan]🐍 Generating AI-powered adversarial framings for objective:[/bold cyan] {objective}")
+        provider_label = "Puter" if ai_provider == "puter" else "GitHub Models"
+        console.print(f"[bold cyan]🐍 Generating AI-powered ({provider_label}) adversarial framings for objective:[/bold cyan] {objective}")
     else:
         console.print(f"[bold cyan]🐍 Generating candidate prompts for objective:[/bold cyan] {objective}")
-    json_path, html_path = run_generate(objective=objective, count=count, output_dir=output_dir, strict=strict, ai=ai)
+    json_path, html_path = run_generate(objective=objective, count=count, output_dir=output_dir, strict=strict, ai=ai, ai_provider=ai_provider)
     console.print(f"  • JSON: [bold]{json_path}[/bold]")
     console.print(f"  • HTML: [bold]{html_path}[/bold]")
 
