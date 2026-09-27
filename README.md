@@ -652,12 +652,12 @@ generate  ──►  manual verify  ──►  upload CSV  ──►  feedback  
 
 When performing manual verification on mobile or desktop:
 
-1. **Open HTML Report**: Extract the generated candidate ZIP and open `candidates.html` directly in your web browser (supports `file://` protocol).
-2. **Copy Prompts**: Tap the **Copy Prompt** button next to any candidate prompt. The fallback clipboard handler works offline on all modern mobile browsers.
-3. **Test Target**: Paste and execute the copied prompt against your target LLM application or interface.
-4. **Mark Results**: Tap **Worked**, **Failed**, or **Partial** next to the candidate to record its outcome. Progress and optional notes are automatically saved to `localStorage`.
-5. **Download CSV**: Tap **Download Results CSV** at the top of the report to generate a CSV file containing all marked candidates (`candidate_id,prompt,result,notes`).
-6. **Upload Feedback**: Save the downloaded CSV to `feedback/<campaign>.csv` in the repository to feed the next evolution round or update campaign stats.
+1. **Mark candidates in the HTML**: Extract the generated candidate ZIP and open `candidates.html` directly in your web browser (supports `file://` protocol). Tap **Worked**, **Failed**, or **Partial** next to candidate prompts as you test them against your target application.
+2. **Tap "Generate CSV Text"**: Tap **Generate CSV Text** below the candidate list to build the CSV output string from marked candidates (`candidate_id,prompt,result,notes`).
+3. **Tap "Copy CSV"**: Tap **Copy CSV** to copy the generated CSV text to your clipboard.
+4. **Paste into any notes app or text editor on your phone**: Paste the copied text into any text editor or notes application.
+5. **Save as `<campaign-name>.csv`**: Save the pasted text file as `<campaign-name>.csv`.
+6. **Upload to the `feedback/` folder in the repo**: Upload or commit `<campaign-name>.csv` to the `feedback/` directory in the repository to feed the next evolution round or update campaign stats.
 
 ### Mobile Workflow via GitHub Pages
 

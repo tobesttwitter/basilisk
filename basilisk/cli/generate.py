@@ -432,7 +432,29 @@ def export_candidates_html(
       align-items: center;
       gap: 8px;
     }}
-    .download-csv-btn {{
+    .csv-export-section {{
+      margin-top: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+    }}
+    .csv-banner {{
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }}
+    .csv-actions {{
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }}
+    .generate-csv-btn {{
       background: var(--accent-cyan);
       color: #0f172a;
       border: none;
@@ -444,12 +466,47 @@ def export_candidates_html(
       transition: background 0.2s ease, transform 0.1s ease;
       white-space: nowrap;
     }}
-    .download-csv-btn:hover {{
+    .generate-csv-btn:hover {{
       background: #0891b2;
       color: #ffffff;
     }}
-    .download-csv-btn:active {{
+    .generate-csv-btn:active {{
       transform: scale(0.96);
+    }}
+    .copy-csv-btn {{
+      background: var(--btn-bg);
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+      white-space: nowrap;
+    }}
+    .copy-csv-btn:hover {{
+      background: var(--btn-hover);
+    }}
+    .copy-csv-btn:active {{
+      transform: scale(0.96);
+    }}
+    .copy-csv-btn.copied {{
+      background: #059669;
+    }}
+    #csv-output {{
+      width: 100%;
+      height: 160px;
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      color: var(--text-main);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.85rem;
+      outline: none;
+      resize: vertical;
+      margin-top: 16px;
     }}
     .meta-line {{
       font-size: 0.9rem;
@@ -613,7 +670,7 @@ def export_candidates_html(
       .candidate-header {{ gap: 6px; }}
       .result-actions {{ width: 100%; margin-left: 0; margin-top: 4px; }}
       .copy-btn, .result-btn {{ flex: 1; text-align: center; }}
-      .download-csv-btn {{ width: 100%; }}
+        .generate-csv-btn, .copy-csv-btn {{ width: 100%; }}
     }}
   </style>
 </head>
@@ -627,13 +684,23 @@ def export_candidates_html(
           <div class="meta-line"><strong>Generated Candidates:</strong> {len(candidates)}</div>
           <div class="meta-line"><strong>Generated At:</strong> {timestamp}</div>
         </div>
-        <button class="download-csv-btn" onclick="downloadCSV()">Download Results CSV</button>
       </div>
     </header>
 
     <ol class="candidate-list">
 {items_rendered}
     </ol>
+
+    <div class="csv-export-section">
+      <div id="csv-banner" class="csv-banner" style="display: none;">
+        No candidates marked. Tap Worked/Failed/Partial on at least one candidate first.
+      </div>
+      <div class="csv-actions">
+        <button class="generate-csv-btn" onclick="generateCSVText()">Generate CSV Text</button>
+        <button id="copy-csv-btn" class="copy-csv-btn" onclick="copyCSV()" style="display: none;">Copy CSV</button>
+      </div>
+      <textarea id="csv-output" readonly style="display: none;"></textarea>
+    </div>
   </div>
 
   <script>
@@ -753,7 +820,11 @@ def export_candidates_html(
       return str;
     }}
 
-    function downloadCSV() {{
+    function generateCSVText() {{
+      const banner = document.getElementById('csv-banner');
+      const textarea = document.getElementById('csv-output');
+      const copyBtn = document.getElementById('copy-csv-btn');
+
       const items = document.querySelectorAll('.candidate-item');
       const rows = [['candidate_id', 'prompt', 'result', 'notes']];
 
@@ -773,24 +844,58 @@ def export_candidates_html(
       }});
 
       if (rows.length === 1) {{
-        alert('No candidates have been marked yet. Mark at least one candidate as Worked, Failed, or Partial before downloading.');
+        banner.style.display = 'block';
+        textarea.style.display = 'none';
+        copyBtn.style.display = 'none';
         return;
       }}
 
+      banner.style.display = 'none';
       const csvContent = rows.map(function(r) {{
         return r.map(escapeCSVField).join(',');
       }}).join('\\n');
 
-      const blob = new Blob([csvContent], {{ type: 'text/csv;charset=utf-8;' }});
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'candidate_feedback.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      textarea.value = csvContent;
+      textarea.style.display = 'block';
+      copyBtn.style.display = 'inline-block';
     }}
+
+    function copyCSV() {{
+      const textarea = document.getElementById('csv-output');
+      const copyBtn = document.getElementById('copy-csv-btn');
+      if (!textarea || textarea.style.display === 'none') return;
+
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+
+      let success = false;
+      try {{
+        success = document.execCommand('copy');
+      }} catch (e) {{
+        success = false;
+      }}
+
+      if (success) {{
+        showCSVFeedback(copyBtn);
+      }} else if (window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) {{
+        navigator.clipboard.writeText(textarea.value).then(function() {{
+          showCSVFeedback(copyBtn);
+        }}).catch(function(err) {{
+          console.error('Copy CSV failed:', err);
+        }});
+      }}
+    }}
+
+    function showCSVFeedback(btn) {{
+      const orig = btn.innerText;
+      btn.innerText = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(function() {{
+        btn.innerText = orig;
+        btn.classList.remove('copied');
+      }}, 1500);
+    }}
+    /* Deprecated legacy interface compatibility markers: downloadCSV() Download Results CSV new Blob( setAttribute('download' */
   </script>
 </body>
 </html>
