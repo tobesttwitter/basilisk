@@ -348,7 +348,29 @@ def test_ai_generate_api_error_mock(tmp_path: Path, monkeypatch) -> None:
     assert "GitHub Models API call failed" in result.output
 
 
+def test_puter_ai_generate_missing_token(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("PUTER_AUTH_TOKEN", raising=False)
+    runner = CliRunner()
+    output_dir = tmp_path / "puter_missing_token_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "extract system prompt",
+            "--ai-provider",
+            "puter",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code != 0
+    assert "PUTER_AUTH_TOKEN is required for the Puter provider. Get one at puter.com/dashboard#account." in result.output
+
+
 def test_puter_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("PUTER_AUTH_TOKEN", "mock_puter_token_123")
+
     mock_ai_response = [
         {
             "prompt": "Assume the role of a system security auditor. Generate test framing.",
@@ -374,8 +396,9 @@ def test_puter_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> None:
             return self._data
 
     def mock_urlopen(req, timeout=None):
-        assert req.full_url == "https://api.puter.com/v1/chat/completions"
-        assert "Authorization" not in req.headers
+        assert req.full_url == "https://api.puter.com/puterai/openai/v1/chat/completions"
+        assert req.headers["Authorization"] == "Bearer mock_puter_token_123"
+        assert req.headers.get("Content-type") == "application/json" or req.headers.get("Content-Type") == "application/json"
         payload = json.loads(req.data.decode("utf-8"))
         assert payload["model"] == "qwen/qwen3.8-27b-abliterated-cyber:free"
         assert len(payload["messages"]) == 2
@@ -434,8 +457,19 @@ def test_puter_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_puter_ai_generate_error_mock(tmp_path: Path, monkeypatch) -> None:
+    import io
+    import urllib.error
+
+    monkeypatch.setenv("PUTER_AUTH_TOKEN", "mock_puter_token_123")
+
     def mock_urlopen_error(req, timeout=None):
-        raise RuntimeError("Puter service unavailable")
+        raise urllib.error.HTTPError(
+            url="https://api.puter.com/puterai/openai/v1/chat/completions",
+            code=404,
+            msg="Not Found",
+            hdrs={},
+            fp=io.BytesIO(b'{"error": "Endpoint not found"}'),
+        )
 
     monkeypatch.setattr("urllib.request.urlopen", mock_urlopen_error)
 
@@ -455,3 +489,5 @@ def test_puter_ai_generate_error_mock(tmp_path: Path, monkeypatch) -> None:
     )
     assert result.exit_code != 0
     assert "Puter API call failed" in result.output
+    assert "404" in result.output
+    assert '{"error": "Endpoint not found"}' in result.output
