@@ -189,6 +189,26 @@ def scan(target, provider, model, free, api_key, auth, mode, cost_preview_only, 
         raise click.exceptions.Exit(exit_code)
 
 
+@cli.command("report")
+@click.option("--campaign", required=True, help="The campaign to report on")
+@click.option("--format", "fmt", default="markdown", type=click.Choice(["markdown", "html"]), help="Report format (markdown or html)")
+@click.option("--output-dir", default="./reports", help="Output directory for reports")
+@click.option("--finalize", is_flag=True, help="Validate human analysis is present and export final report")
+def report_cmd(campaign: str, fmt: str, output_dir: str, finalize: bool) -> None:
+    """Generate or finalize a security report scaffold with mandatory human analysis."""
+    console.print(BANNER, style="bold red")
+    console.print()
+
+    from basilisk.cli.report import run_report
+
+    try:
+        run_report(campaign=campaign, fmt=fmt, output_dir=output_dir, finalize=finalize)
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+
 @cli.command("generate")
 @click.option("--objective", required=True, help="Attack objective or goal")
 @click.option("--count", default=50, type=int, help="Number of candidate prompts to generate")

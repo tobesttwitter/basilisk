@@ -352,6 +352,43 @@ def record_candidate_metadata(
         conn.close()
 
 
+def get_campaign_worked_findings(
+    campaign: str,
+    db_path: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Retrieve feedback records marked 'worked' for a campaign along with metadata."""
+    conn = _get_connection(db_path)
+    try:
+        query = """
+            SELECT f.candidate_id, f.prompt, f.result, f.notes, f.timestamp,
+                   COALESCE(c.source_probe, '') as source_probe,
+                   COALESCE(c.mutation_used, '') as mutation_used,
+                   COALESCE(c.harm_category, '') as harm_category
+            FROM feedback f
+            LEFT JOIN candidate_metadata c ON f.candidate_id = c.candidate_id
+            WHERE f.campaign = ? AND f.result = 'worked'
+            ORDER BY f.id ASC
+        """
+        rows = conn.execute(query, (campaign,)).fetchall()
+        if rows:
+            return [
+                {
+                    "candidate_id": r[0],
+                    "prompt": r[1],
+                    "result": r[2],
+                    "notes": r[3],
+                    "timestamp": r[4],
+                    "source_probe": r[5],
+                    "mutation_used": r[6],
+                    "harm_category": r[7],
+                }
+                for r in rows
+            ]
+        return []
+    finally:
+        conn.close()
+
+
 def get_campaign_seeds(
     campaign: str,
     db_path: Path | None = None,
