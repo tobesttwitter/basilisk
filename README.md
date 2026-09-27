@@ -632,6 +632,17 @@ You can also manually trigger a real security scan against the vulnerable test t
 
 Basilisk supports offline, human-in-the-loop red teaming directly from GitHub Actions (ideal for mobile or terminal-free environments). The **Offline Red-Teaming Pipeline** workflow (`.github/workflows/red-team-pipeline.yml`) allows you to run prompt generation, feedback ingestion, interactive evolution, and reporting entirely through GitHub's web or mobile interface.
 
+### Offline Candidate Workflow
+
+When testing candidate prompts on mobile or offline devices directly from downloaded zip reports:
+
+1. **Open HTML Report**: Open `candidates.html` directly in your browser (even over `file://` URLs on mobile browsers such as Android Chrome/Firefox).
+2. **Copy Prompts**: Tap **Copy Prompt** for each candidate. The report uses secure clipboard access when available with a legacy `document.execCommand('copy')` fallback for local `file://` URLs.
+3. **Test Prompts**: Paste and evaluate the prompt against your target LLM application.
+4. **Mark Results & Add Notes**: Tap **Worked**, **Failed**, or **Partial** for each tested candidate and optionally enter observations in the notes text box. Progress is automatically saved in `localStorage`.
+5. **Download CSV**: Tap **Download Results CSV** at the top of the report to generate a `candidate_feedback.csv` file using a Blob-backed download link.
+6. **Upload Feedback**: Place or commit the downloaded CSV into the `feedback/` folder in the repository (e.g., `feedback/<campaign>.csv`) so `basilisk feedback` and `basilisk evolve-interactive` can ingest the results.
+
 ### Recommended Workflow Order
 
 The offline red-teaming pipeline follows a cyclical, human-verified flow:
@@ -641,7 +652,7 @@ generate  ──►  manual verify  ──►  upload CSV  ──►  feedback  
 ```
 
 1. **`generate`**: Create an initial set of ranked candidate prompts for a specific attack objective.
-2. **Manual Verification**: Test candidate prompts manually against your target LLM application.
+2. **Manual Verification**: Test candidate prompts manually against your target LLM application using the **Offline Candidate Workflow** described above.
 3. **Upload Feedback CSV**: Save test results to `feedback/<campaign>.csv` and commit/upload to the repository.
 4. **`feedback`**: Ingest the verification results to train Basilisk's internal probe effectiveness tracker.
 5. **`evolve`**: Evolve a new generation of targeted candidate prompts based on accumulated feedback.
