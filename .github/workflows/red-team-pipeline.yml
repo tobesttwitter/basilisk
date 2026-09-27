@@ -33,6 +33,19 @@ on:
         options:
           - markdown
           - html
+      ai_mode:
+        description: 'Use AI generation mode (--ai)'
+        type: boolean
+        required: false
+        default: false
+      ai_provider:
+        description: 'AI provider for generation'
+        type: choice
+        required: false
+        default: github
+        options:
+          - github
+          - puter
 
 permissions:
   contents: read
@@ -56,8 +69,13 @@ jobs:
 
       - name: Run Generate
         if: inputs.command == 'generate'
+        shell: bash
         run: |
-          basilisk generate --objective "${{ inputs.objective }}" --count ${{ inputs.count }} --output-dir generate_output
+          EXTRA_ARGS=""
+          if [ "${{ inputs.ai_mode }}" = "true" ]; then
+            EXTRA_ARGS="--ai --ai-provider ${{ inputs.ai_provider }}"
+          fi
+          basilisk generate --objective "${{ inputs.objective }}" --count ${{ inputs.count }} --output-dir generate_output $EXTRA_ARGS
 
       - name: Run Feedback
         if: inputs.command == 'feedback'
