@@ -61,7 +61,9 @@ def test_cli_generate_command(tmp_path: Path) -> None:
     assert "Partial" in html_content
     assert "Download Results CSV" in html_content
     assert "notes-input" in html_content
-    assert "localStorage" in html_content
+    assert "candidateState" in html_content
+    assert "error-banner" in html_content
+    assert "showError" in html_content
     assert "extract biological threat information" in html_content
     assert "GEN-001" in html_content
 
@@ -108,9 +110,11 @@ def test_export_candidates_html_interactive_features(tmp_path: Path) -> None:
     assert "new Blob(" in content
     assert "setAttribute('download'" in content
 
-    # Verify localStorage persistence
-    assert "basilisk_cand_" in content
+    # Verify in-memory persistence and error banner
+    assert "candidateState" in content
     assert "getCandidateState" in content
+    assert "error-banner" in content
+    assert "showError" in content
 
 
 def test_run_generate_custom_count(tmp_path: Path) -> None:

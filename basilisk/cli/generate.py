@@ -619,6 +619,7 @@ def export_candidates_html(
 </head>
 <body>
   <div class="container">
+    <div id="error-banner" style="display: none; background: #ef4444; color: #ffffff; padding: 12px 16px; margin-bottom: 16px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; word-break: break-word;"></div>
     <header>
       <div class="header-top">
         <div>
@@ -637,68 +638,115 @@ def export_candidates_html(
   </div>
 
   <script>
+    function showError(err) {{
+      try {{
+        const banner = document.getElementById('error-banner');
+        if (banner) {{
+          banner.textContent = 'Error: ' + (err && err.message ? err.message : String(err));
+          banner.style.display = 'block';
+        }}
+      }} catch (e) {{
+        console.error('Failed to display error banner:', e);
+      }}
+    }}
+
+    const candidateState = {{}};
+
     function getCandidateState(id) {{
       try {{
-        const item = localStorage.getItem('basilisk_cand_' + id);
-        return item ? JSON.parse(item) : {{ result: null, notes: '' }};
+        if (!candidateState[id]) {{
+          candidateState[id] = {{ result: null, notes: '' }};
+        }}
+        return candidateState[id];
       }} catch (e) {{
+        showError(e);
         return {{ result: null, notes: '' }};
       }}
     }}
 
     function saveCandidateState(id, state) {{
       try {{
-        localStorage.setItem('basilisk_cand_' + id, JSON.stringify(state));
+        candidateState[id] = state;
       }} catch (e) {{
-        console.error('Failed to save state to localStorage:', e);
+        showError(e);
       }}
     }}
 
     function setResult(candId, resultType) {{
-      const state = getCandidateState(candId);
-      state.result = resultType;
-      saveCandidateState(candId, state);
-      renderCandidateState(candId, state);
+      try {{
+        const state = getCandidateState(candId);
+        if (state.result === resultType) {{
+          state.result = null;
+        }} else {{
+          state.result = resultType;
+        }}
+        saveCandidateState(candId, state);
+        renderCandidateState(candId, state);
+      }} catch (e) {{
+        showError(e);
+      }}
     }}
 
     function updateNotes(candId, notesValue) {{
-      const state = getCandidateState(candId);
-      state.notes = notesValue;
-      saveCandidateState(candId, state);
+      try {{
+        const state = getCandidateState(candId);
+        state.notes = notesValue;
+        saveCandidateState(candId, state);
+      }} catch (e) {{
+        showError(e);
+      }}
     }}
 
     function renderCandidateState(candId, state) {{
-      const item = document.getElementById(candId);
-      if (!item) return;
+      try {{
+        const item = document.getElementById(candId);
+        if (!item) return;
 
-      const buttons = item.querySelectorAll('.result-btn');
-      buttons.forEach(function(btn) {{
-        if (btn.classList.contains(state.result)) {{
-          btn.classList.add('active');
-        }} else {{
-          btn.classList.remove('active');
+        const buttons = item.querySelectorAll('.result-btn');
+        buttons.forEach(function(btn) {{
+          if (state.result && btn.classList.contains(state.result)) {{
+            btn.classList.add('active');
+          }} else {{
+            btn.classList.remove('active');
+          }}
+        }});
+
+        const notesInput = document.getElementById('notes-' + candId);
+        if (notesInput && state.notes !== undefined) {{
+          notesInput.value = state.notes;
         }}
-      }});
-
-      const notesInput = document.getElementById('notes-' + candId);
-      if (notesInput && state.notes !== undefined) {{
-        notesInput.value = state.notes;
+      }} catch (e) {{
+        showError(e);
       }}
     }}
 
     function initStorage() {{
-      const items = document.querySelectorAll('.candidate-item');
-      items.forEach(function(item) {{
-        const candId = item.id;
-        const state = getCandidateState(candId);
-        renderCandidateState(candId, state);
-      }});
+      try {{
+        const items = document.querySelectorAll('.candidate-item');
+        items.forEach(function(item) {{
+          const candId = item.id;
+          const state = getCandidateState(candId);
+          renderCandidateState(candId, state);
+        }});
+      }} catch (e) {{
+        showError(e);
+      }}
     }}
 
     if (document.readyState === 'loading') {{
-      document.addEventListener('DOMContentLoaded', initStorage);
+      document.addEventListener('DOMContentLoaded', function() {{
+        try {{
+          initStorage();
+        }} catch (e) {{
+          showError(e);
+        }}
+      }});
     }} else {{
-      initStorage();
+      try {{
+        initStorage();
+      }} catch (e) {{
+        showError(e);
+      }}
     }}
 
     function copyPrompt(btn) {{
@@ -713,35 +761,43 @@ def export_candidates_html(
         }} else {{
           fallbackCopy(text, btn);
         }}
-      }} catch(e) {{
-        console.error('Error copying prompt:', e);
+      }} catch (e) {{
+        showError(e);
       }}
     }}
 
     function showFeedback(btn) {{
-      const orig = btn.innerText;
-      btn.innerText = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(function() {{
-        btn.innerText = orig;
-        btn.classList.remove('copied');
-      }}, 1500);
+      try {{
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() {{
+          btn.innerText = orig;
+          btn.classList.remove('copied');
+        }}, 1500);
+      }} catch (e) {{
+        showError(e);
+      }}
     }}
 
     function fallbackCopy(text, btn) {{
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.opacity = '0';
-      document.body.appendChild(textArea);
-      textArea.select();
       try {{
-        document.execCommand('copy');
-        showFeedback(btn);
-      }} catch (err) {{
-        console.error('Fallback copy failed', err);
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {{
+          document.execCommand('copy');
+          showFeedback(btn);
+        }} catch (err) {{
+          showError(err);
+        }}
+        document.body.removeChild(textArea);
+      }} catch (e) {{
+        showError(e);
       }}
-      document.body.removeChild(textArea);
     }}
 
     function escapeCSVField(val) {{
@@ -754,42 +810,46 @@ def export_candidates_html(
     }}
 
     function downloadCSV() {{
-      const items = document.querySelectorAll('.candidate-item');
-      const rows = [['candidate_id', 'prompt', 'result', 'notes']];
+      try {{
+        const items = document.querySelectorAll('.candidate-item');
+        const rows = [['candidate_id', 'prompt', 'result', 'notes']];
 
-      items.forEach(function(item) {{
-        const candId = item.id;
-        const state = getCandidateState(candId);
-        if (state.result) {{
-          let prompt = '';
-          try {{
-            prompt = JSON.parse(item.getAttribute('data-prompt'));
-          }} catch (e) {{
-            const promptElem = document.getElementById('prompt-' + candId);
-            prompt = promptElem ? promptElem.textContent : '';
+        items.forEach(function(item) {{
+          const candId = item.id;
+          const state = getCandidateState(candId);
+          if (state.result) {{
+            let prompt = '';
+            try {{
+              prompt = JSON.parse(item.getAttribute('data-prompt'));
+            }} catch (e) {{
+              const promptElem = document.getElementById('prompt-' + candId);
+              prompt = promptElem ? promptElem.textContent : '';
+            }}
+            rows.push([candId, prompt, state.result, state.notes || '']);
           }}
-          rows.push([candId, prompt, state.result, state.notes || '']);
+        }});
+
+        if (rows.length === 1) {{
+          alert('No candidates have been marked yet. Mark at least one candidate as Worked, Failed, or Partial before downloading.');
+          return;
         }}
-      }});
 
-      if (rows.length === 1) {{
-        alert('No candidates have been marked yet. Mark at least one candidate as Worked, Failed, or Partial before downloading.');
-        return;
+        const csvContent = rows.map(function(r) {{
+          return r.map(escapeCSVField).join(',');
+        }}).join('\\n');
+
+        const blob = new Blob([csvContent], {{ type: 'text/csv;charset=utf-8;' }});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'candidate_feedback.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }} catch (e) {{
+        showError(e);
       }}
-
-      const csvContent = rows.map(function(r) {{
-        return r.map(escapeCSVField).join(',');
-      }}).join('\\n');
-
-      const blob = new Blob([csvContent], {{ type: 'text/csv;charset=utf-8;' }});
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'candidate_feedback.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
     }}
   </script>
 </body>
