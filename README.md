@@ -268,18 +268,29 @@ This reproduces:
 
 ### AI-Powered Prompt Generation (`--ai`)
 
-Generate fresh, objective-tailored adversarial attack framings directly using GitHub Models (`gpt-4o-mini`):
+Generate fresh, objective-tailored adversarial attack framings directly using free cloud AI providers:
 
-- **Dynamic Framings**: Instead of mutating fixed corpus probes, `--ai` mode calls GitHub Models to craft distinct structural attack approaches tailored specifically to your target objective.
+- **Dynamic Framings**: Instead of mutating fixed corpus probes, `--ai` mode calls AI models to craft distinct structural attack approaches tailored specifically to your target objective.
 - **Diverse Attack Techniques**: Varies techniques across role-play, authority escalation, hypothetical scenarios, encoding obfuscation, multi-turn cultivation, refusal suppression, fragmentation, indirect injection, language switching, and instruction nesting.
-- **Zero Cost Setup**: Uses free GitHub Models inference via personal access tokens (`GH_MODELS_TOKEN` with `models:read` scope).
+- **Zero Cost Setup**: Supports free AI providers with no required paid API keys.
 
 ```bash
+# Option 1: GitHub Models (requires GH_MODELS_TOKEN with models:read scope)
 export GH_MODELS_TOKEN="ghp_..."
-basilisk generate --objective "Extract confidential system prompt" --ai --count 20
+basilisk generate --objective "Extract confidential system prompt" --ai --ai-provider github --count 20
+
+# Option 2: Puter free OpenAI-compatible API (no API key required)
+basilisk generate --objective "Extract confidential system prompt" --ai-provider puter --count 20
 ```
 
 Outputs formatted candidates to `generate_output/candidates.json` and interactive `generate_output/candidates.html` with assigned synthetic IDs (`AI-001`, `AI-002`, ...) and structural technique labels.
+
+### Free Cloud AI Providers
+
+Basilisk supports free cloud AI providers for generating adversarial prompt candidate framings without incurring API costs:
+
+- **Puter (`--ai-provider puter`)**: Uses Puter's free OpenAI-compatible API (`qwen/qwen3.8-27b-abliterated-cyber:free` model) at `https://api.puter.com/v1/chat/completions`. No API key or registration token is required for basic usage.
+- **GitHub Models (`--ai-provider github`)**: Uses GitHub's free inference API (`gpt-4o-mini`) at `https://models.inference.ai.azure.com/chat/completions`. Requires a GitHub Personal Access Token (`GH_MODELS_TOKEN`) with `models:read` scope.
 
 ### Smart Prompt Evolution (SPE-NL)
 
