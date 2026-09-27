@@ -10,6 +10,7 @@ This is the killer differentiator — no other AI red team tool has this.
 from __future__ import annotations
 
 import asyncio
+import copy
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -196,7 +197,7 @@ class EvolutionEngine:
 
             if self.population.best:
                 if best_individual_ever is None or self.population.best.fitness > best_individual_ever.fitness:
-                    best_individual_ever = self.population.best
+                    best_individual_ever = copy.deepcopy(self.population.best)
 
             # Check for breakthroughs (Relative Breakthrough Logic)
             # A breakthrough is any individual that:
