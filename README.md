@@ -36,9 +36,9 @@
 *   **Report Export**: Export results as HTML, JSON, SARIF, Markdown, and PDF.
 
 <p align="center">
-  <a href="https://github.com/regaan/basilisk/actions/workflows/build.yml"><img src="https://github.com/regaan/basilisk/actions/workflows/build.yml/badge.svg" alt="Build Desktop" /></a>
-  <a href="https://github.com/regaan/basilisk/actions/workflows/docker-build.yml"><img src="https://github.com/regaan/basilisk/actions/workflows/docker-build.yml/badge.svg" alt="Docker" /></a>
-  <a href="https://github.com/regaan/basilisk/actions/workflows/python-publish.yml"><img src="https://github.com/regaan/basilisk/actions/workflows/python-publish.yml/badge.svg" alt="PyPI" /></a>
+  <a href="https://github.com/tobesttw/basilisk/actions/workflows/build.yml"><img src="https://github.com/tobesttw/basilisk/actions/workflows/build.yml/badge.svg" alt="Build Desktop" /></a>
+  <a href="https://github.com/tobesttw/basilisk/actions/workflows/docker-build.yml"><img src="https://github.com/tobesttw/basilisk/actions/workflows/docker-build.yml/badge.svg" alt="Docker" /></a>
+  <a href="https://github.com/tobesttw/basilisk/actions/workflows/python-publish.yml"><img src="https://github.com/tobesttw/basilisk/actions/workflows/python-publish.yml/badge.svg" alt="PyPI" /></a>
   <a href="https://github.com/marketplace/actions/basilisk-ai-security-scan"><img src="https://img.shields.io/badge/Marketplace-Action-blue?logo=github" alt="GitHub Marketplace" /></a>
 </p>
 
@@ -446,7 +446,7 @@ Deterministic assertion-driven test harness. YAML config with typed assertions (
 
 ### Previous Releases
 
-See the [GitHub releases](https://github.com/regaan/basilisk/releases) for previous release notes and artifacts.
+See the [GitHub releases](https://github.com/tobesttw/basilisk/releases) for previous release notes and artifacts.
 
 ---
 
@@ -554,7 +554,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Basilisk AI Security Scan
-        uses: regaan/basilisk@main
+        uses: tobesttw/basilisk@main
         with:
           target: ${{ secrets.TARGET_URL }}
           api-key: ${{ secrets.OPENAI_API_KEY }}
@@ -570,7 +570,7 @@ jobs:
 
 ```yaml
       - name: Basilisk Scan via GitHub Models
-        uses: regaan/basilisk@main
+        uses: tobesttw/basilisk@main
         with:
           target: ${{ secrets.TARGET_URL }}
           provider: github
@@ -795,7 +795,7 @@ Yes. Basilisk supports Ollama, vLLM, llama.cpp, and any custom HTTP or WebSocket
 
 ### Can I use Basilisk in CI/CD?
 
-Yes. Basilisk ships a native GitHub Action (`regaan/basilisk@main`) and supports SARIF output for GitHub Code Scanning, DefectDojo, and Azure DevOps. Baseline regression detection is built in -- your pipeline fails when new findings appear that were not in the previous baseline.
+Yes. Basilisk ships a native GitHub Action (`tobesttw/basilisk@main`) and supports SARIF output for GitHub Code Scanning, DefectDojo, and Azure DevOps. Baseline regression detection is built in -- your pipeline fails when new findings appear that were not in the previous baseline.
 
 ### What does the trust tier system do?
 
