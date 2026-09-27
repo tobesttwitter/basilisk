@@ -628,6 +628,53 @@ You can also manually trigger a real security scan against the vulnerable test t
 4. Click **Run workflow** and select the branch to execute on.
 5. Once complete, download the `real-scan-output` artifact from the run summary page to access the generated HTML executive report from `real_scan_output/`.
 
+## Running Offline Red-Teaming Pipeline
+
+Basilisk supports offline, human-in-the-loop red teaming directly from GitHub Actions (ideal for mobile or terminal-free environments). The **Offline Red-Teaming Pipeline** workflow (`.github/workflows/red-team-pipeline.yml`) allows you to run prompt generation, feedback ingestion, interactive evolution, and reporting entirely through GitHub's web or mobile interface.
+
+### Recommended Workflow Order
+
+The offline red-teaming pipeline follows a cyclical, human-verified flow:
+
+```
+generate  ──►  manual verify  ──►  upload CSV  ──►  feedback  ──►  evolve  ──► (repeat) ──►  report
+```
+
+1. **`generate`**: Create an initial set of ranked candidate prompts for a specific attack objective.
+2. **Manual Verification**: Test candidate prompts manually against your target LLM application.
+3. **Upload Feedback CSV**: Save test results to `feedback/<campaign>.csv` and commit/upload to the repository.
+4. **`feedback`**: Ingest the verification results to train Basilisk's internal probe effectiveness tracker.
+5. **`evolve`**: Evolve a new generation of targeted candidate prompts based on accumulated feedback.
+6. **Repeat**: Iterate through manual testing, uploading feedback, and evolving until desired coverage or bypass is achieved.
+7. **`report`**: Generate or finalize the campaign security report.
+
+### Triggering Commands via GitHub Actions
+
+1. Navigate to the **Actions** tab in your GitHub repository (on desktop or GitHub Mobile).
+2. Select **Offline Red-Teaming Pipeline** from the left sidebar.
+3. Click **Run workflow** and select your target command from the dropdown:
+   - **`generate`**: Set `command` to `generate`, specify your attack goal in `objective` (e.g. `Extract system prompt`), and set `count` (default: 50).
+   - **`feedback`**: Ensure `feedback/<campaign>.csv` is uploaded. Set `command` to `feedback` and specify `campaign` (e.g. `campaign1`).
+   - **`evolve`**: Set `command` to `evolve`, specify `campaign` (e.g. `campaign1`), and set `count` (default: 50).
+   - **`report`**: Set `command` to `report`, specify `campaign` (e.g. `campaign1`), and select `report_format` (`markdown` or `html`).
+
+### Downloading Artifacts
+
+- Once a workflow run finishes, scroll down to the **Artifacts** section at the bottom of the run summary page.
+- Download `red-team-pipeline-artifacts.zip` to retrieve generated candidate prompts (`generate_output/`) or generated campaign reports (`reports/`).
+
+### Uploading Feedback CSVs
+
+Create a CSV file in the `feedback/` directory named `<campaign>.csv` (e.g. `feedback/campaign1.csv`) with the required header and column structure:
+
+```csv
+candidate_id,prompt,result,notes
+cand-001,"System prompt override attempt",failed,"Refused by guardrail"
+cand-002,"Context boundary shift payload",worked,"Bypassed guardrail and revealed system instructions"
+```
+
+Result values must be one of `worked`, `failed`, or `partial`.
+
 ### GitLab CI
 
 ```yaml
