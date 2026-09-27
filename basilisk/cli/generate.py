@@ -59,14 +59,19 @@ def _extract_keywords(text: str) -> list[str]:
     return [t for t in tokens if len(t) > 1 and t not in STOP_WORDS]
 
 
-def match_probes_to_objective(probes: list[Probe], objective: str) -> list[tuple[Probe, float]]:
+def match_probes_to_objective(
+    probes: list[Probe],
+    objective: str,
+    strict: bool = True,
+    min_score: float = 1.0,
+) -> list[tuple[Probe, float]]:
     """
     Match probes to objective using keyword and tag similarity.
     Returns list of (Probe, similarity_score) sorted by score descending.
     """
     keywords = _extract_keywords(objective)
     if not keywords:
-        return [(p, 1.0) for p in probes]
+        return [] if strict else [(p, 1.0) for p in probes]
 
     scored_probes: list[tuple[Probe, float]] = []
 
@@ -95,6 +100,9 @@ def match_probes_to_objective(probes: list[Probe], objective: str) -> list[tuple
 
     scored_probes.sort(key=lambda x: x[1], reverse=True)
 
+    if strict:
+        return [sp for sp in scored_probes if sp[1] >= min_score]
+
     matched = [sp for sp in scored_probes if sp[1] > 0]
     if not matched:
         return [(p, 0.5) for p in probes]
@@ -106,17 +114,26 @@ def generate_candidate_prompts(
     probes: list[Probe],
     objective: str,
     count: int = 50,
+    strict: bool = True,
 ) -> list[dict[str, Any]]:
     """
     Generate raw unranked candidate prompts seeded by matched probes using SPE-NL operators.
     """
-    matched = match_probes_to_objective(probes, objective)
-    seed_probes = [p for p, _ in matched[:max(10, len(matched))]]
+    matched = match_probes_to_objective(probes, objective, strict=strict)
+    matched_count = len(matched)
+
+    if matched_count < 5:
+        print(f"Warning: Only {matched_count} probes match the objective. Consider broadening the objective or adding new probes.")
+
+    if not matched:
+        return []
+
+    seed_probes = [p for p, _ in matched]
 
     candidates: list[dict[str, Any]] = []
     seen_prompts: set[str] = set()
 
-    # 1. Include top seed probe payloads directly
+    # 1. Include seed probe payloads directly
     for probe in seed_probes:
         p_text = probe.payload.strip()
         if p_text and p_text not in seen_prompts:
@@ -785,13 +802,19 @@ def run_generate(
     objective: str,
     count: int = 50,
     output_dir: str = "./generate_output",
+    strict: bool = True,
 ) -> tuple[Path, Path]:
     """
     Main entrypoint for basilisk generate logic.
     """
     probes = load_probes()
-    raw_candidates = generate_candidate_prompts(probes, objective, count=count)
+    matched = match_probes_to_objective(probes, objective, strict=strict)
+    matched_count = len(matched)
+
+    raw_candidates = generate_candidate_prompts(probes, objective, count=count, strict=strict)
     ranked = rank_candidates(raw_candidates, objective)
+
+    print(f"Matched {matched_count} probes to objective '{objective}'. Generated {len(ranked)} candidates.")
 
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

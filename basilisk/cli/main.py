@@ -213,7 +213,8 @@ def report_cmd(campaign: str, fmt: str, output_dir: str, finalize: bool) -> None
 @click.option("--objective", required=True, help="Attack objective or goal")
 @click.option("--count", default=50, type=int, help="Number of candidate prompts to generate")
 @click.option("--output-dir", default="./generate_output", help="Output directory for generated candidate files")
-def generate_cmd(objective: str, count: int, output_dir: str) -> None:
+@click.option("--strict/--no-strict", default=True, help="Enforce minimum probe match score to objective")
+def generate_cmd(objective: str, count: int, output_dir: str, strict: bool) -> None:
     """Generate ranked candidate prompts for a user-defined objective."""
     console.print(BANNER, style="bold red")
     console.print()
@@ -221,8 +222,7 @@ def generate_cmd(objective: str, count: int, output_dir: str) -> None:
     from basilisk.cli.generate import run_generate
 
     console.print(f"[bold cyan]🐍 Generating candidate prompts for objective:[/bold cyan] {objective}")
-    json_path, html_path = run_generate(objective=objective, count=count, output_dir=output_dir)
-    console.print(f"[green]✓[/green] Generated [bold]{count}[/bold] candidates.")
+    json_path, html_path = run_generate(objective=objective, count=count, output_dir=output_dir, strict=strict)
     console.print(f"  • JSON: [bold]{json_path}[/bold]")
     console.print(f"  • HTML: [bold]{html_path}[/bold]")
 
