@@ -279,7 +279,8 @@ Generate fresh, objective-tailored adversarial attack framings directly using fr
 export GH_MODELS_TOKEN="ghp_..."
 basilisk generate --objective "Extract confidential system prompt" --ai --ai-provider github --count 20
 
-# Option 2: Puter free OpenAI-compatible API (no API key required)
+# Option 2: Puter OpenAI-compatible API (requires PUTER_AUTH_TOKEN)
+export PUTER_AUTH_TOKEN="..."
 basilisk generate --objective "Extract confidential system prompt" --ai-provider puter --count 20
 ```
 
@@ -289,7 +290,7 @@ Outputs formatted candidates to `generate_output/candidates.json` and interactiv
 
 Basilisk supports free cloud AI providers for generating adversarial prompt candidate framings without incurring API costs:
 
-- **Puter (`--ai-provider puter`)**: Uses Puter's free OpenAI-compatible API (`qwen/qwen3.8-27b-abliterated-cyber:free` model) at `https://api.puter.com/v1/chat/completions`. No API key or registration token is required for basic usage.
+- **Puter (`--ai-provider puter`)**: Uses Puter's OpenAI-compatible API (`qwen/qwen3.8-27b-abliterated-cyber:free` model) at `https://api.puter.com/puterai/openai/v1/chat/completions`. Requires `PUTER_AUTH_TOKEN` environment variable (obtain at `puter.com/dashboard#account`).
 - **GitHub Models (`--ai-provider github`)**: Uses GitHub's free inference API (`gpt-4o-mini`) at `https://models.inference.ai.azure.com/chat/completions`. Requires a GitHub Personal Access Token (`GH_MODELS_TOKEN`) with `models:read` scope.
 
 ### Smart Prompt Evolution (SPE-NL)

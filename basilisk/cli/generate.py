@@ -924,8 +924,15 @@ def generate_ai_candidate_prompts(
     import click
 
     if ai_provider == "puter":
-        url = "https://api.puter.com/v1/chat/completions"
+        token = os.environ.get("PUTER_AUTH_TOKEN", "").strip()
+        if not token:
+            raise click.ClickException(
+                "PUTER_AUTH_TOKEN is required for the Puter provider. Get one at puter.com/dashboard#account."
+            )
+
+        url = "https://api.puter.com/puterai/openai/v1/chat/completions"
         headers = {
+            "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         }
         system_prompt = (
@@ -1004,6 +1011,10 @@ def generate_ai_candidate_prompts(
             raise ValueError("API output is not a JSON array")
     except click.ClickException:
         raise
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        print(f"Error: {provider_name} API call failed with HTTP {e.code}: {body}", file=sys.stderr)
+        raise click.ClickException(f"{provider_name} API call failed with HTTP {e.code}: {body}")
     except Exception as e:
         print(f"Error: {provider_name} API call failed: {e}", file=sys.stderr)
         raise click.ClickException(f"{provider_name} API call failed: {e}")
