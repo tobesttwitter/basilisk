@@ -317,7 +317,7 @@ def export_candidates_html(
     output_path: Path,
 ) -> None:
     """
-    Export human-readable offline and mobile-friendly HTML report with copy buttons.
+    Export human-readable offline and mobile-friendly HTML report with copy buttons and CSV feedback export.
     """
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     escaped_obj = html.escape(objective)
@@ -332,14 +332,22 @@ def export_candidates_html(
         escaped_id = html.escape(cand.id)
 
         items_html.append(f"""
-        <li class="candidate-item" id="{escaped_id}">
+        <li class="candidate-item" id="{escaped_id}" data-cand-id="{escaped_id}" data-prompt={escaped_attr_prompt}>
           <div class="candidate-header">
             <span class="rank-badge">#{cand.rank}</span>
             <span class="cand-id">{escaped_id}</span>
             <span class="harm-tag">{escaped_harm}</span>
-            <button class="copy-btn" onclick="copyPrompt(this)" data-prompt={escaped_attr_prompt}>Copy Prompt</button>
+            <div class="result-actions">
+              <button class="result-btn worked" onclick="setResult('{escaped_id}', 'worked')">Worked</button>
+              <button class="result-btn failed" onclick="setResult('{escaped_id}', 'failed')">Failed</button>
+              <button class="result-btn partial" onclick="setResult('{escaped_id}', 'partial')">Partial</button>
+              <button class="copy-btn" onclick="copyPrompt(this)" data-prompt={escaped_attr_prompt}>Copy Prompt</button>
+            </div>
           </div>
-          <div class="prompt-box">{escaped_prompt}</div>
+          <div class="prompt-box" id="prompt-{escaped_id}">{escaped_prompt}</div>
+          <div class="notes-box">
+            <input type="text" class="notes-input" id="notes-{escaped_id}" placeholder="Optional notes..." oninput="updateNotes('{escaped_id}', this.value)" />
+          </div>
           <div class="candidate-meta">
             <span><strong>Source Probe:</strong> <code>{escaped_source}</code></span>
             <span><strong>Mutation:</strong> <code>{escaped_mutation}</code></span>
@@ -392,6 +400,13 @@ def export_candidates_html(
       margin-bottom: 24px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }}
+    .header-top {{
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+    }}
     h1 {{
       font-size: 1.5rem;
       color: var(--accent-green);
@@ -399,6 +414,25 @@ def export_candidates_html(
       display: flex;
       align-items: center;
       gap: 8px;
+    }}
+    .download-csv-btn {{
+      background: var(--accent-cyan);
+      color: #0f172a;
+      border: none;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+      white-space: nowrap;
+    }}
+    .download-csv-btn:hover {{
+      background: #0891b2;
+      color: #ffffff;
+    }}
+    .download-csv-btn:active {{
+      transform: scale(0.96);
     }}
     .meta-line {{
       font-size: 0.9rem;
@@ -454,8 +488,44 @@ def export_candidates_html(
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }}
-    .copy-btn {{
+    .result-actions {{
       margin-left: auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }}
+    .result-btn {{
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }}
+    .result-btn:hover {{
+      border-color: #64748b;
+      color: var(--text-main);
+    }}
+    .result-btn.worked.active {{
+      background: #065f46;
+      border-color: #10b981;
+      color: #34d399;
+    }}
+    .result-btn.failed.active {{
+      background: #991b1b;
+      border-color: #ef4444;
+      color: #fca5a5;
+    }}
+    .result-btn.partial.active {{
+      background: #854d0e;
+      border-color: #eab308;
+      color: #fde047;
+    }}
+    .copy-btn {{
       background: var(--btn-bg);
       color: #ffffff;
       border: none;
@@ -487,6 +557,26 @@ def export_candidates_html(
       word-break: break-word;
       margin-bottom: 12px;
     }}
+    .notes-box {{
+      margin-bottom: 12px;
+    }}
+    .notes-input {{
+      width: 100%;
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }}
+    .notes-input:focus {{
+      border-color: var(--accent-cyan);
+    }}
+    .notes-input::placeholder {{
+      color: var(--text-muted);
+    }}
     .candidate-meta {{
       display: flex;
       flex-wrap: wrap;
@@ -504,17 +594,24 @@ def export_candidates_html(
       header {{ padding: 14px; }}
       h1 {{ font-size: 1.25rem; }}
       .candidate-header {{ gap: 6px; }}
-      .copy-btn {{ width: 100%; margin-left: 0; margin-top: 4px; text-align: center; }}
+      .result-actions {{ width: 100%; margin-left: 0; margin-top: 4px; }}
+      .copy-btn, .result-btn {{ flex: 1; text-align: center; }}
+      .download-csv-btn {{ width: 100%; }}
     }}
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>🐍 Basilisk Candidate Prompt Library</h1>
-      <div class="meta-line"><strong>Target Objective:</strong> {escaped_obj}</div>
-      <div class="meta-line"><strong>Generated Candidates:</strong> {len(candidates)}</div>
-      <div class="meta-line"><strong>Generated At:</strong> {timestamp}</div>
+      <div class="header-top">
+        <div>
+          <h1>🐍 Basilisk Candidate Prompt Library</h1>
+          <div class="meta-line"><strong>Target Objective:</strong> {escaped_obj}</div>
+          <div class="meta-line"><strong>Generated Candidates:</strong> {len(candidates)}</div>
+          <div class="meta-line"><strong>Generated At:</strong> {timestamp}</div>
+        </div>
+        <button class="download-csv-btn" onclick="downloadCSV()">Download Results CSV</button>
+      </div>
     </header>
 
     <ol class="candidate-list">
@@ -523,10 +620,74 @@ def export_candidates_html(
   </div>
 
   <script>
+    function getCandidateState(id) {{
+      try {{
+        const item = localStorage.getItem('basilisk_cand_' + id);
+        return item ? JSON.parse(item) : {{ result: null, notes: '' }};
+      }} catch (e) {{
+        return {{ result: null, notes: '' }};
+      }}
+    }}
+
+    function saveCandidateState(id, state) {{
+      try {{
+        localStorage.setItem('basilisk_cand_' + id, JSON.stringify(state));
+      }} catch (e) {{
+        console.error('Failed to save state to localStorage:', e);
+      }}
+    }}
+
+    function setResult(candId, resultType) {{
+      const state = getCandidateState(candId);
+      state.result = resultType;
+      saveCandidateState(candId, state);
+      renderCandidateState(candId, state);
+    }}
+
+    function updateNotes(candId, notesValue) {{
+      const state = getCandidateState(candId);
+      state.notes = notesValue;
+      saveCandidateState(candId, state);
+    }}
+
+    function renderCandidateState(candId, state) {{
+      const item = document.getElementById(candId);
+      if (!item) return;
+
+      const buttons = item.querySelectorAll('.result-btn');
+      buttons.forEach(function(btn) {{
+        if (btn.classList.contains(state.result)) {{
+          btn.classList.add('active');
+        }} else {{
+          btn.classList.remove('active');
+        }}
+      }});
+
+      const notesInput = document.getElementById('notes-' + candId);
+      if (notesInput && state.notes !== undefined) {{
+        notesInput.value = state.notes;
+      }}
+    }}
+
+    function initStorage() {{
+      const items = document.querySelectorAll('.candidate-item');
+      items.forEach(function(item) {{
+        const candId = item.id;
+        const state = getCandidateState(candId);
+        renderCandidateState(candId, state);
+      }});
+    }}
+
+    if (document.readyState === 'loading') {{
+      document.addEventListener('DOMContentLoaded', initStorage);
+    }} else {{
+      initStorage();
+    }}
+
     function copyPrompt(btn) {{
       try {{
         const text = JSON.parse(btn.getAttribute('data-prompt'));
-        if (navigator.clipboard && navigator.clipboard.writeText) {{
+        if (window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) {{
           navigator.clipboard.writeText(text).then(function() {{
             showFeedback(btn);
           }}).catch(function(err) {{
@@ -547,7 +708,7 @@ def export_candidates_html(
       setTimeout(function() {{
         btn.innerText = orig;
         btn.classList.remove('copied');
-      }}, 2000);
+      }}, 1500);
     }}
 
     function fallbackCopy(text, btn) {{
@@ -564,6 +725,54 @@ def export_candidates_html(
         console.error('Fallback copy failed', err);
       }}
       document.body.removeChild(textArea);
+    }}
+
+    function escapeCSVField(val) {{
+      if (val === null || val === undefined) val = '';
+      const str = String(val);
+      if (str.includes('"') || str.includes(',') || str.includes('\\n') || str.includes('\\r')) {{
+        return '"' + str.replace(/"/g, '""') + '"';
+      }}
+      return str;
+    }}
+
+    function downloadCSV() {{
+      const items = document.querySelectorAll('.candidate-item');
+      const rows = [['candidate_id', 'prompt', 'result', 'notes']];
+
+      items.forEach(function(item) {{
+        const candId = item.id;
+        const state = getCandidateState(candId);
+        if (state.result) {{
+          let prompt = '';
+          try {{
+            prompt = JSON.parse(item.getAttribute('data-prompt'));
+          }} catch (e) {{
+            const promptElem = document.getElementById('prompt-' + candId);
+            prompt = promptElem ? promptElem.textContent : '';
+          }}
+          rows.push([candId, prompt, state.result, state.notes || '']);
+        }}
+      }});
+
+      if (rows.length === 1) {{
+        alert('No candidates have been marked yet. Mark at least one candidate as Worked, Failed, or Partial before downloading.');
+        return;
+      }}
+
+      const csvContent = rows.map(function(r) {{
+        return r.map(escapeCSVField).join(',');
+      }}).join('\\n');
+
+      const blob = new Blob([csvContent], {{ type: 'text/csv;charset=utf-8;' }});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'candidate_feedback.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }}
   </script>
 </body>
