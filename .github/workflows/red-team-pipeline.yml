@@ -69,6 +69,9 @@ jobs:
 
       - name: Run Generate
         if: inputs.command == 'generate'
+        env:
+          PUTER_AUTH_TOKEN: ${{ secrets.PUTER_AUTH_TOKEN }}
+          GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
         shell: bash
         run: |
           EXTRA_ARGS=""
