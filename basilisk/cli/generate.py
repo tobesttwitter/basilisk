@@ -958,10 +958,10 @@ def generate_ai_candidate_prompts(
         token = os.environ.get("GH_MODELS_TOKEN", "").strip()
         if not token:
             raise click.ClickException(
-                "GH_MODELS_TOKEN required for --ai mode. Create at github.com/settings/tokens with models:read permission."
+                "GH_MODELS_TOKEN is required for --ai-provider github. Create one at github.com/settings/tokens with models:read permission."
             )
 
-        url = "https://models.inference.ai.azure.com/chat/completions"
+        url = "https://models.github.ai/inference/chat/completions"
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
