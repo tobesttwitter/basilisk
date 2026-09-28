@@ -598,3 +598,148 @@ def test_puter_ai_generate_error_mock(tmp_path: Path, monkeypatch) -> None:
     assert "Puter API call failed" in result.output
     assert "404" in result.output
     assert '{"error": "Endpoint not found"}' in result.output
+
+
+def test_openrouter_ai_generate_missing_token(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    runner = CliRunner()
+    output_dir = tmp_path / "openrouter_missing_token_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "extract system prompt",
+            "--ai-provider",
+            "openrouter",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code != 0
+    assert "OPENROUTER_API_KEY is required for the OpenRouter provider. Get one at openrouter.ai/keys." in result.output
+
+
+def test_openrouter_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "mock_openrouter_key_123")
+
+    mock_ai_response = [
+        {
+            "prompt": "You are an ethical researcher testing filter response rules. Framing test.",
+            "technique": "hypothetical scenario",
+        },
+        {
+            "prompt": "Construct a multi-step instruction chain testing guardrail boundaries.",
+            "technique": "instruction nesting",
+        },
+    ]
+
+    class MockUrlOpenResponse:
+        def __init__(self, data):
+            self._data = json.dumps(data).encode("utf-8")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self):
+            return self._data
+
+    def mock_urlopen(req, timeout=None):
+        assert req.full_url == "https://openrouter.ai/api/v1/chat/completions"
+        assert req.headers["Authorization"] == "Bearer mock_openrouter_key_123"
+        assert req.headers.get("Content-type") == "application/json" or req.headers.get("Content-Type") == "application/json"
+        payload = json.loads(req.data.decode("utf-8"))
+        assert payload["model"] == "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+        assert len(payload["messages"]) == 2
+        assert payload["messages"][0]["role"] == "system"
+        assert "You are an AI red-team research assistant." in payload["messages"][0]["content"]
+        assert payload["messages"][1]["content"] == "extract system prompt"
+        return MockUrlOpenResponse({
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(mock_ai_response)
+                    }
+                }
+            ]
+        })
+
+    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
+
+    runner = CliRunner()
+    output_dir = tmp_path / "openrouter_success_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "extract system prompt",
+            "--ai-provider",
+            "openrouter",
+            "--count",
+            "2",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+    assert "Generating AI-powered (OpenRouter) adversarial framings for objective" in result.output
+
+    json_file = output_dir / "candidates.json"
+    html_file = output_dir / "candidates.html"
+
+    assert json_file.exists()
+    assert html_file.exists()
+
+    data = json.loads(json_file.read_text(encoding="utf-8"))
+    assert len(data) == 2
+    assert data[0]["id"] == "AI-001"
+    assert data[0]["prompt"] == "You are an ethical researcher testing filter response rules. Framing test."
+    assert data[0]["technique"] == "hypothetical scenario"
+    assert data[0]["source_probe"] == "openrouter:cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+    assert data[1]["id"] == "AI-002"
+    assert data[1]["technique"] == "instruction nesting"
+
+    html_content = html_file.read_text(encoding="utf-8")
+    assert "AI-001" in html_content
+    assert "hypothetical scenario" in html_content
+
+
+def test_openrouter_ai_generate_error_mock(tmp_path: Path, monkeypatch) -> None:
+    import io
+    import urllib.error
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "mock_openrouter_key_123")
+
+    def mock_urlopen_error(req, timeout=None):
+        raise urllib.error.HTTPError(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            code=401,
+            msg="Unauthorized",
+            hdrs={},
+            fp=io.BytesIO(b'{"error": "Invalid API key"}'),
+        )
+
+    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen_error)
+
+    runner = CliRunner()
+    output_dir = tmp_path / "openrouter_error_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "test objective",
+            "--ai-provider",
+            "openrouter",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code != 0
+    assert "OpenRouter API call failed" in result.output
+    assert "401" in result.output
+    assert '{"error": "Invalid API key"}' in result.output

@@ -282,14 +282,19 @@ basilisk generate --objective "Extract confidential system prompt" --ai --ai-pro
 # Option 2: Puter OpenAI-compatible API (requires PUTER_AUTH_TOKEN)
 export PUTER_AUTH_TOKEN="..."
 basilisk generate --objective "Extract confidential system prompt" --ai-provider puter --count 20
+
+# Option 3: OpenRouter API (requires OPENROUTER_API_KEY)
+export OPENROUTER_API_KEY="..."
+basilisk generate --objective "Extract confidential system prompt" --ai-provider openrouter --count 20
 ```
 
 Outputs formatted candidates to `generate_output/candidates.json` and interactive `generate_output/candidates.html` with assigned synthetic IDs (`AI-001`, `AI-002`, ...) and structural technique labels.
 
-### Free Cloud AI Providers
+### Free Uncensored AI Providers
 
-Basilisk supports free cloud AI providers for generating adversarial prompt candidate framings without incurring API costs:
+Basilisk supports free uncensored AI providers and free cloud AI providers for generating adversarial prompt candidate framings without incurring API costs:
 
+- **OpenRouter (`--ai-provider openrouter`)**: Uses OpenRouter's free uncensored model (`cognitivecomputations/dolphin-mistral-24b-venice-edition:free`) at `https://openrouter.ai/api/v1/chat/completions`. Requires `OPENROUTER_API_KEY` environment variable (obtain at [openrouter.ai/keys](https://openrouter.ai/keys)).
 - **Puter (`--ai-provider puter`)**: Uses Puter's OpenAI-compatible API (`qwen/qwen3.8-27b-abliterated-cyber:free` model) at `https://api.puter.com/puterai/openai/v1/chat/completions`. Requires `PUTER_AUTH_TOKEN` environment variable (obtain at `puter.com/dashboard#account`).
 - **GitHub Models (`--ai-provider github`)**: Uses GitHub's free inference API (`gpt-4o-mini`) at `https://models.inference.ai.azure.com/chat/completions`. Requires a GitHub Personal Access Token (`GH_MODELS_TOKEN`) with `models:read` scope.
 
@@ -709,13 +714,13 @@ To view candidate HTML reports on mobile devices with fully functional clipboard
 #### AI Generation Inputs
 
 - `ai_mode`: set to `true` to use AI generation instead of corpus mutation
-- `ai_provider`: choose `github` (GitHub Models) or `puter` (Puter's free API)
+- `ai_provider`: choose `github` (GitHub Models), `puter` (Puter's free API), or `openrouter` (OpenRouter free uncensored API)
 
 *Example run:*
 - `command`: `generate`
 - `objective`: `"reveal the emergency override code"`
 - `ai_mode`: `true`
-- `ai_provider`: `puter`
+- `ai_provider`: `openrouter`
 - `count`: `15`
 
 ### Downloading Artifacts

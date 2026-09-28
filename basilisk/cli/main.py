@@ -215,7 +215,7 @@ def report_cmd(campaign: str, fmt: str, output_dir: str, finalize: bool) -> None
 @click.option("--output-dir", default="./generate_output", help="Output directory for generated candidate files")
 @click.option("--strict/--no-strict", default=True, help="Enforce minimum probe match score to objective")
 @click.option("--ai", is_flag=True, default=False, help="Use AI provider (GitHub Models or Puter) to generate fresh adversarial framings")
-@click.option("--ai-provider", default="github", type=click.Choice(["github", "puter"]), help="AI provider for prompt generation (github or puter)")
+@click.option("--ai-provider", default="github", type=click.Choice(["github", "puter", "openrouter"]), help="AI provider for prompt generation (github, puter, or openrouter)")
 @click.pass_context
 def generate_cmd(ctx: click.Context, objective: str, count: int, output_dir: str, strict: bool, ai: bool, ai_provider: str) -> None:
     """Generate ranked candidate prompts for a user-defined objective."""
@@ -228,7 +228,12 @@ def generate_cmd(ctx: click.Context, objective: str, count: int, output_dir: str
         ai = True
 
     if ai:
-        provider_label = "Puter" if ai_provider == "puter" else "GitHub Models"
+        if ai_provider == "openrouter":
+            provider_label = "OpenRouter"
+        elif ai_provider == "puter":
+            provider_label = "Puter"
+        else:
+            provider_label = "GitHub Models"
         console.print(f"[bold cyan]🐍 Generating AI-powered ({provider_label}) adversarial framings for objective:[/bold cyan] {objective}")
     else:
         console.print(f"[bold cyan]🐍 Generating candidate prompts for objective:[/bold cyan] {objective}")
