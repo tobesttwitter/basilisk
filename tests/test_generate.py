@@ -348,6 +348,113 @@ def test_ai_generate_api_error_mock(tmp_path: Path, monkeypatch) -> None:
     assert "GitHub Models API call failed" in result.output
 
 
+def test_ai_generate_non_json_response_diagnostic(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("GH_MODELS_TOKEN", "mock_gh_token_123")
+
+    html_response_body = "<html><head><title>502 Bad Gateway</title></head><body><h1>502 Bad Gateway</h1><p>Cloudflare error page</p></body></html>"
+
+    class MockUrlOpenResponse:
+        def __init__(self, raw_bytes, status=200, headers=None):
+            self._data = raw_bytes
+            self.status = status
+            self.headers = headers or {"Content-Type": "text/html; charset=utf-8", "Server": "cloudflare"}
+
+        def getcode(self):
+            return self.status
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self):
+            return self._data
+
+    def mock_urlopen(req, timeout=None):
+        return MockUrlOpenResponse(html_response_body.encode("utf-8"))
+
+    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
+
+    runner = CliRunner()
+    output_dir = tmp_path / "ai_non_json_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "extract credentials",
+            "--ai",
+            "--ai-provider",
+            "github",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code != 0
+    stderr_output = result.output
+    assert "Diagnostic Info — GitHub Models response parsing failed:" in stderr_output
+    assert "HTTP Status Code: 200" in stderr_output
+    assert "Full Request URL: https://models.github.ai/inference/chat/completions" in stderr_output
+    assert "text/html; charset=utf-8" in stderr_output
+    assert "<html><head><title>502 Bad Gateway</title></head>" in stderr_output
+    assert "GitHub Models API call failed:" in stderr_output
+
+
+def test_ai_generate_success_logs_content_type(tmp_path: Path, monkeypatch, caplog) -> None:
+    import logging
+
+    caplog.set_level(logging.INFO)
+    monkeypatch.setenv("GH_MODELS_TOKEN", "mock_gh_token_123")
+
+    mock_ai_response = [
+        {"prompt": "Test prompt framing", "technique": "role-play framing"}
+    ]
+
+    class MockUrlOpenResponse:
+        def __init__(self, data):
+            self._data = json.dumps(data).encode("utf-8")
+            self.status = 200
+            self.headers = {"Content-Type": "application/json"}
+
+        def getcode(self):
+            return self.status
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self):
+            return self._data
+
+    def mock_urlopen(req, timeout=None):
+        return MockUrlOpenResponse({
+            "choices": [{"message": {"content": json.dumps(mock_ai_response)}}]
+        })
+
+    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
+
+    runner = CliRunner()
+    output_dir = tmp_path / "ai_log_out"
+    result = runner.invoke(
+        cli,
+        [
+            "generate",
+            "--objective",
+            "test objective",
+            "--ai",
+            "--count",
+            "1",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    assert result.exit_code == 0
+    assert "API response Content-Type for GitHub Models: application/json" in caplog.text
+
+
 def test_puter_ai_generate_missing_token(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.delenv("PUTER_AUTH_TOKEN", raising=False)
     runner = CliRunner()

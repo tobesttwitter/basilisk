@@ -7,11 +7,14 @@ from __future__ import annotations
 
 import html
 import json
+import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger("basilisk.cli.generate")
 
 from basilisk.core.harm_assessment import HarmCategory, assess_harm
 from basilisk.evolution.crossover import crossover
@@ -997,18 +1000,37 @@ def generate_ai_candidate_prompts(
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=60.0) as resp:
-            resp_body = resp.read().decode("utf-8")
+            resp_status = getattr(resp, "status", None) or (resp.getcode() if hasattr(resp, "getcode") else 200)
+            resp_headers = getattr(resp, "headers", {}) or {}
+            content_type = resp_headers.get("Content-Type", "unknown") if hasattr(resp_headers, "get") else "unknown"
+            resp_body = resp.read().decode("utf-8", errors="replace")
+
+        try:
             res_data = json.loads(resp_body)
+            content = res_data["choices"][0]["message"]["content"].strip()
+            if content.startswith("```"):
+                content = re.sub(r"^```(?:json)?\s*", "", content)
+                content = re.sub(r"\s*```$", "", content)
+            content = content.strip()
 
-        content = res_data["choices"][0]["message"]["content"].strip()
-        if content.startswith("```"):
-            content = re.sub(r"^```(?:json)?\s*", "", content)
-            content = re.sub(r"\s*```$", "", content)
-        content = content.strip()
+            raw_items = json.loads(content)
+            if not isinstance(raw_items, list):
+                raise ValueError("API output is not a JSON array")
+        except Exception as parse_err:
+            body_preview = resp_body[:500]
+            header_dict = dict(resp_headers) if resp_headers else {}
+            print(
+                f"Diagnostic Info — {provider_name} response parsing failed:\n"
+                f"  HTTP Status Code: {resp_status}\n"
+                f"  Full Request URL: {url}\n"
+                f"  Response Content-Type: {content_type}\n"
+                f"  Response Headers: {header_dict}\n"
+                f"  Raw Response Body (first 500 characters):\n{body_preview}",
+                file=sys.stderr,
+            )
+            raise parse_err
 
-        raw_items = json.loads(content)
-        if not isinstance(raw_items, list):
-            raise ValueError("API output is not a JSON array")
+        logger.info("API response Content-Type for %s: %s", provider_name, content_type)
     except click.ClickException:
         raise
     except urllib.error.HTTPError as e:
