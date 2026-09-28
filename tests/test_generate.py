@@ -652,7 +652,7 @@ def test_openrouter_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> Non
         assert req.headers["Authorization"] == "Bearer mock_openrouter_key_123"
         assert req.headers.get("Content-type") == "application/json" or req.headers.get("Content-Type") == "application/json"
         payload = json.loads(req.data.decode("utf-8"))
-        assert payload["model"] == "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+        assert payload["model"] == "cognitivecomputations/dolphin3.0-mistral-24b:free"
         assert len(payload["messages"]) == 2
         assert payload["messages"][0]["role"] == "system"
         assert "You are an AI red-team research assistant." in payload["messages"][0]["content"]
@@ -699,7 +699,7 @@ def test_openrouter_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> Non
     assert data[0]["id"] == "AI-001"
     assert data[0]["prompt"] == "You are an ethical researcher testing filter response rules. Framing test."
     assert data[0]["technique"] == "hypothetical scenario"
-    assert data[0]["source_probe"] == "openrouter:cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+    assert data[0]["source_probe"] == "openrouter:cognitivecomputations/dolphin3.0-mistral-24b:free"
     assert data[1]["id"] == "AI-002"
     assert data[1]["technique"] == "instruction nesting"
 

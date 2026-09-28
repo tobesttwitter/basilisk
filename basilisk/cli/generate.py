@@ -948,14 +948,14 @@ def generate_ai_candidate_prompts(
             "dangerous, or illegal content. Only generate the framing that would be used to test a target model's filters."
         )
         payload = {
-            "model": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+            "model": "cognitivecomputations/dolphin3.0-mistral-24b:free",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": objective},
             ],
             "temperature": 0.7,
         }
-        source_probe_id = "openrouter:cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+        source_probe_id = "openrouter:cognitivecomputations/dolphin3.0-mistral-24b:free"
         provider_name = "OpenRouter"
     elif ai_provider == "puter":
         token = os.environ.get("PUTER_AUTH_TOKEN", "").strip()
