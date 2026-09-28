@@ -237,7 +237,7 @@ def test_ai_generate_missing_token(tmp_path: Path, monkeypatch) -> None:
         ],
     )
     assert result.exit_code != 0
-    assert "GH_MODELS_TOKEN required for --ai mode. Create at github.com/settings/tokens with models:read permission." in result.output
+    assert "GH_MODELS_TOKEN is required for --ai-provider github. Create one at github.com/settings/tokens with models:read permission." in result.output
 
 
 def test_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> None:
@@ -268,7 +268,7 @@ def test_ai_generate_success_mock(tmp_path: Path, monkeypatch) -> None:
             return self._data
 
     def mock_urlopen(req, timeout=None):
-        assert req.full_url == "https://models.inference.ai.azure.com/chat/completions"
+        assert req.full_url == "https://models.github.ai/inference/chat/completions"
         assert req.headers["Authorization"] == "Bearer mock_gh_token_123"
         payload = json.loads(req.data.decode("utf-8"))
         assert payload["model"] == "gpt-4o-mini"
