@@ -46,6 +46,7 @@ on:
         options:
           - github
           - puter
+          - openrouter
 
 permissions:
   contents: read
@@ -70,6 +71,7 @@ jobs:
       - name: Run Generate
         if: inputs.command == 'generate'
         env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           PUTER_AUTH_TOKEN: ${{ secrets.PUTER_AUTH_TOKEN }}
           GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
         shell: bash
